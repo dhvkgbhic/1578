@@ -1,10 +1,17 @@
  local lib = loadstring(game:HttpGet("https://raw.githubusercontent.com/CloudX-ScriptsWane/UI-library/main/like%20lib.lua", true))()
 
- local win = lib:Create("喵喵~星","停更这个UI将一直保持到5月5日") 
+ local win = lib:Create("喵喵~星","停更") 
 
  local a = win:tab("申眀",true) 
+ local b = win:tab("继续用v10",false) 
+  
    a:label("666") 
    a:label("终于想好了") 
    a:label("停更") 
    a:label("5月5日") 
-a:label("再见") 
+   a:label("再见") 
+   
+   b:toggle("v10",false,function(v) 
+     print(v)    
+     loadstring(game:HttpGet("https://raw.githubusercontent.com/dhvkgbhic/1578/main/v10？？？0"))()
+ end) 
