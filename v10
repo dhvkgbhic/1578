@@ -3,7 +3,7 @@
  local win = lib:Create("喵喵~星","停更") 
 
  local a = win:tab("申眀",true) 
- local b = win:tab("继续用v10",false) 
+ local b = win:tab("使用最新v11",false) 
   
    a:label("666") 
    a:label("终于想好了") 
