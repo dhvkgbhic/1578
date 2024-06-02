@@ -3,12 +3,11 @@
  local win = lib:Create("喵喵~星","666") 
 
  local a = win:tab("申眀",true) 
- local b = win:tab("使用最新v12",false) 
-  
-   a:label("666") 
-   a:label("12") 
-   a:label("gui") 
-   a:label("886") 
+ local b = win:tab("使用老版",false) 
+
+   a:label("六月即将改版通知") 
+   a:label("未出新版") 
+   a:label("耐心等待") 
    
    b:toggle("v12",false,function(v) 
      print(v)    
