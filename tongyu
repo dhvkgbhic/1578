@@ -43,6 +43,17 @@ local Window = OrionLib:MakeWindow({Name = "喵喵~⭐️星脚本0.01", HidePre
 
 game:GetService("StarterGui"):SetCore("SendNotification",{ Title = "喵喵~⭐️星脚本0.01"; Text ="喵喵~⭐️星脚本0.01"; Duration = 4; })
 
+local Tab = Window:MakeTab({
+    Name = "返回高级版",
+	Icon = "rbxassetid://18270615016",
+	PremiumOnly = false
+})
+Tab:AddButton({
+    Name = "返回",
+	Callback = function()
+loadstring(game:HttpGet("https://pastebin.com/raw/Ym91auG4"))()
+	end
+})
 local about = Window:MakeTab({
     Name = "简介",
     Icon = "rbxassetid://18270615016",
