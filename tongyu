@@ -157,9 +157,6 @@ Tab:AddButton({
 	loadstring(game:HttpGet(('https://pastebin.com/raw/1p6xnBNf'),true))()
 		end
 })
-Tab:AddButton({
-    Name = "脚本名",
-	Callback = function()
 Tab:AddToggle({
 	Name = "esp",
 	Default = false,
