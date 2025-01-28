@@ -1058,3 +1058,114 @@ Tab:AddButton({
 	loadstring(game:HttpGet("https://pastefy.app/YZoglOyJ/raw"))()
 		end
 })
+local Tab =Window:MakeTab({
+
+	Name = "音乐id",
+
+	Icon = "rbxassetid://18270615016",
+
+	PremiumOnly = false
+
+})
+local Section = Tab:AddSection({
+	Name = "以下为音乐ID（点击复制）"
+	
+	Tab:AddButton({
+
+	Name = "sans",
+
+	Callback = function()
+
+     setclipboard("4336990234")
+
+  	end
+
+})
+	Tab:AddButton({
+
+	Name = "雨中牛郎",
+
+	Callback = function()
+
+     setclipboard("16831108393")
+
+  	end
+
+})
+	Tab:AddButton({
+
+	Name = "几首phonk",
+
+	Callback = function()
+
+     setclipboard("15689458996 15689448519 16662829387 14145626744 15689453166")
+
+  	end
+
+})
+	Tab:AddButton({
+
+	Name = "航空模拟器背景音乐",
+
+	Callback = function()
+
+     setclipboard("1838080629")
+
+  	end
+
+})
+	Tab:AddButton({
+
+	Name = "奥巴嘎",
+
+	Callback = function()
+
+     setclipboard("5216738441")
+
+  	end
+
+})
+	Tab:AddButton({
+
+	Name = "防空警报",
+
+	Callback = function()
+
+     setclipboard("6456981311")
+
+  	end
+
+})
+	Tab:AddButton({
+
+	Name = "比较好听的音乐",
+
+	Callback = function()
+
+     setclipboard("1847606521")
+
+  	end
+
+})
+	Tab:AddButton({
+
+	Name = "FBL扫黄",
+
+	Callback = function()
+
+     setclipboard("5216610038")
+
+  	end
+
+})
+local Tab = Window:MakeTab({
+    Name = "音乐",
+	Icon = "rbxassetid://18270615016",
+	PremiumOnly = false
+})
+Tab:AddButton({
+    Name = "执行音乐脚本",
+	Callback = function()
+	loadstring(game:HttpGet("https://pastebin.com/raw/X5B3S9U1"))()
+		end
+})
