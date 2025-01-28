@@ -1,6 +1,7 @@
 local OrionLib = loadstring(game:HttpGet("https://pastebin.com/raw/GExt49hn"))()
 local LBLG = Instance.new("ScreenGui", getParent)
 local LBL = Instance.new("TextLabel", getParent)
+local Background = Instance.new("ImageLabel")
 local player = game.Players.LocalPlayer
 
 LBLG.Name = "LBLG"
@@ -21,6 +22,8 @@ LBL.TextScaled = true
 LBL.TextSize = 14
 LBL.TextWrapped = true
 LBL.Visible = true
+Background.Name = "Background"
+Background.Parent = LBLG
 
 local FpsLabel = LBL
 local Heartbeat = game:GetService("RunService").Heartbeat
@@ -139,6 +142,125 @@ Tab:AddToggle({
     end
     	end
 })
+local Tab = Window:MakeTab({
+	Name = "念力",
+	Icon = "rbxassetid://7734068321",
+	PremiumOnly = false
+})
+
+Tab:AddButton({
+  Name = "获取念力工具",
+  Callback = function()
+loadstring(game:HttpGet("https://pastebin.com/raw/dbcy7SHF"))()
+  end
+})
+
+Tab:AddLabel("Q - 靠近")
+Tab:AddLabel("E - 离远")
+Tab:AddLabel("Y - 投掷")
+Tab:AddLabel("J - 超级投掷")
+Tab:AddLabel("U - 使物体自转")
+Tab:AddLabel("P - 使物体悬浮在空中")
+Tab:AddLabel("X - 走得更远一点")
+Tab:AddLabel("L - 使方块变直并锁定在前部")
+Tab:AddLabel("J-飞起来")
+Tab:AddLabel("K-回到手中")
+
+Tab:AddButton({
+  Name = "让手上的道具飘起来",
+  Callback = function()
+loadstring(game:HttpGet("https://pastebin.com/raw/WmD8MuSx"))()
+  end
+})
+
+Tab:AddButton({
+  Name = "穿墙(可关闭)",
+  Callback = function()
+loadstring(game:HttpGet("https://raw.githubusercontent.com/TtmScripter/OtherScript/main/Noclip"))()
+  end
+})
+Tab:AddButton({
+	Name = "点击传送工器",
+	Callback = function()
+
+mouse = game.Players.LocalPlayer:GetMouse() tool = Instance.new("Tool") tool.RequiresHandle = false tool.Name = "喵喵~⭐️星传送工具" tool.Activated:connect(function() local pos = mouse.Hit+Vector3.new(0,2.5,0) pos = CFrame.new(pos.X,pos.Y,pos.Z) game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = pos end) tool.Parent = game.Players.LocalPlayer.Backpack
+
+	end
+})
+Tab:AddButton({
+  Name = "帧率显示",
+  Callback = function()
+ -- Gui to Lua 
+ -- Version: 3.2 
+  
+ -- Instances:
+ local ScreenGui = Instance.new("ScreenGui") 
+ local FpsLabel = Instance.new("TextLabel")
+ 
+ --Properties:
+ 
+ ScreenGui.Name = "FPSGui" 
+ ScreenGui.ResetOnSpawn = false 
+ ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling 
+ 
+ FpsLabel.Name = "FPSLabel" 
+ FpsLabel.Size = UDim2.new(0, 100, 0, 50) 
+ FpsLabel.Position = UDim2.new(0, 10, 0, 10) 
+ FpsLabel.BackgroundTransparency = 1 
+ FpsLabel.Font = Enum.Font.SourceSansBold 
+ FpsLabel.Text = "帧率: 0" 
+ FpsLabel.TextSize = 20 
+ FpsLabel.TextColor3 = Color3.new(1, 1, 1) 
+ FpsLabel.Parent = ScreenGui 
+  
+ function updateFpsLabel() 
+     local fps = math.floor(1 / game:GetService("RunService").RenderStepped:Wait()) 
+     FpsLabel.Text = "帧率: " .. fps 
+ end 
+  
+  game:GetService("RunService").RenderStepped:Connect(updateFpsLabel) 
+  
+ ScreenGui.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
+
+
+ animateCredits()
+  end
+})
+
+Tab:AddButton({
+  Name = "指令脚本",
+  Callback = function()
+  loadstring(game:HttpGet(('https://raw.githubusercontent.com/EdgeIY/infiniteyield/master/source'),true))()
+  end
+})
+
+Tab:AddLabel("bang能够掀人")
+Tab:AddLabel("noface没有脸")
+Tab:AddLabel("headsit坐在玩家头上加玩家名字")
+Tab:AddLabel("float悬浮")
+Tab:AddLabel("re重置人物但位置不变")
+Tab:AddLabel("dance跳舞")
+Tab:AddLabel("nolegs没有腿")
+Tab:AddLabel("walltp碰到墙壁传送到墙壁顶部")
+Tab:AddLabel("bring+玩家名字可以让玩家吸到你手上但是只能用于一些服务器")
+Tab:AddLabel("carpet趴着走")
+Tab:AddLabel("infjump无限跳跃")
+Tab:AddLabel("xray透视地图所有物体变透明")
+Tab:AddLabel("bang玩家开头两个英文吸在玩家身后")
+Tab:AddLabel("noanim没有动作")
+Tab:AddLabel("spin人物旋转")
+Tab:AddLabel("sitwalk坐着走")
+Tab:AddLabel("trip让你的人物摔倒")
+Tab:AddLabel("antikick防踢")
+Tab:AddLabel("lay躺下")
+Tab:AddLabel("sit坐")
+Tab:AddLabel("god加血")
+Tab:AddLabel("invisfling配合加血可以旋转")
+Tab:AddLabel("goto+玩家名字传送")
+Tab:AddLabel("unxray关闭透视")
+Tab:AddLabel("noclip穿墙")
+Tab:AddLabel("有的可能不能用")
+
 Tab:AddButton({
     Name = "地图生成一个坤巴（r6）",
 	Callback = function()
@@ -309,21 +431,7 @@ Tab:AddTextbox({
 	end
 
 })
-Tab:AddButton({
-    Name = "工具点击传送",
-	Callback = function()
-	mouse = game.Players.LocalPlayer:GetMouse()
-                tool = Instance.new("Tool")
-                tool.RequiresHandle = false
-                tool.Name = "⭐️星喵~点击传送"
-                tool.Activated:connect(function()
-                local pos = mouse.Hit+Vector3.new(0,2.5,0)
-                pos = CFrame.new(pos.X,pos.Y,pos.Z)
-                game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = pos
-                end)
-                tool.Parent = game.Players.LocalPlayer.Backpack
-                	end
-})
+
 Tab:AddToggle({
 
 	Name = "夜视",
@@ -779,7 +887,7 @@ local Tab = Window:MakeTab({
 Tab:AddButton({
     Name = "高级版",
 	Callback = function()
-	loadstring(game:HttpGet("https://pastebin.com/raw/ryjYr0zW"))()
+	loadstring(game:HttpGet("https://pastebin.com/raw/bVUDGpCT"))()
 		end
 })
 local Tab = Window:MakeTab({
@@ -817,7 +925,7 @@ Tab:AddButton({
 		end
 })
 local Section = Tab:AddSection({
-	Name = "下面是二代鲨口求生"
+	Name = "二代鲨口求生"
 })
 Tab:AddButton({
     Name = "1",
@@ -900,387 +1008,9 @@ Tab:AddButton({
 		end
 })
 local Tab = Window:MakeTab({
-    Name = "各大脚本",
-	Icon = "rbxassetid://18270615016",
-	PremiumOnly = false
-})
-Tab:AddButton({
-    Name = "星河",
-	Callback = function()
-	loadstring(game:HttpGet("https://raw.githubusercontent.com/AWDX-DYVB/test/main/%E6%B2%B3%E6%B5%81%E6%97%A0%E5%AF%86%E9%92%A5.lua"))()
-		end
-})
-Tab:AddButton({
-	Name = "☁脚本",
-	Callback = function()
-    loadstring(game:HttpGet("https://raw.githubusercontent.com/XiaoYunCN/LOL/main/%E4%BA%91%E8%84%9A%E6%9C%ACCloud%20script.lua", true))()
-    	end
-})
-
-Tab:AddButton({
-
-    Name="XC卡密:w",
-
-    Callback=function()
-
-        getgenv().XC="作者XC"
-
-   loadstring(game:HttpGet("https://pastebin.com/raw/PAFzYx0F"))()
-
-    end
-
-})
-
-Tab:AddButton({
-
-    Name="龙脚本",
-
-    Callback=function()
-
-        getgenv().long = "龙脚本，加载时间长请耐心"
-
- loadstring("\108\111\97\100\115\116\114\105\110\103\40\103\97\109\101\58\72\116\116\112\71\101\116\40\34\104\116\116\112\115\58\47\47\114\97\119\46\103\105\116\104\117\98\117\115\101\114\99\111\110\116\101\110\116\46\99\111\109\47\108\121\121\97\105\110\105\47\108\111\110\47\109\97\105\110\47\108\105\115\119\109\34\41\41\40\41")()
-
-    end
-
-})
-
-Tab:AddButton({
-
-    Name="USA",
-
-    Callback=function()
-
-        getgenv().USA="作者USA免费请勿倒卖"
-
-   loadstring(game:HttpGet("https://raw.githubusercontent.com/boyscp/beta/main/USA.lua"))()
-
-    end
-
-})
-
-Tab:AddButton({
-
-	Name = "青脚本",
-
-	Callback = function()
-   loadstring(game:HttpGet('https://raw.githubusercontent.com/kkaaccnnbb/money/main/fix'))()
-
-    end
-
-})
-
-Tab:AddButton({
-
-	Name = "秋脚本",
-
-	Callback = function()
-
-     local SCC_CharPool={[1]= tostring(utf8.char((function() return table.unpack({104,116,116,112,115,58,47,47,114,97,119,46,103,105,116,104,117,98,117,115,101,114,99,111,110,116,101,110,116,46,99,111,109,47,87,83,56,53,55,57,54,48,47,45,47,109,97,105,110,47,37,69,55,37,65,55,37,56,66,37,67,50,37,66,55,37,69,56,37,56,55,37,65,65,37,69,53,37,56,56,37,66,54,37,69,56,37,56,52,37,57,65,37,69,54,37,57,67,37,65,67,37,69,54,37,57,54,37,66,48,37,69,54,37,66,65,37,57,48,37,69,55,37,65,48,37,56,49,46,116,120,116})end)()))}
-loadstring(game:HttpGet(SCC_CharPool[1]))()
-
-    end
-
-})
-
-Tab:AddButton({
-
-	Name = "冰脚本",
-
-	Callback = function()
-
-  loadstring(game:HttpGet("https://pastebin.com/raw/GR4ChWKv"))()
-
-    end
-
-})
-
-Tab:AddButton({
-
-	Name = "剑客v3_roblox加入群组剑客才可用",
-
-	Callback = function()
-
-   jianke_V3 = "作者_初夏"jianke = "剑客QQ群347724155"loadstring(game:HttpGet(('https://raw.githubusercontent.com/jiankeQWQ/jiankeV3/main/jianke_V3')))()
-
-    end
-
-})
-
-Tab:AddButton({
-
-	Name = "鲨脚本",
-
-	Callback = function()
-
-   loadstring(game:HttpGet("https://raw.githubusercontent.com/sharksharksharkshark/shark-shark-shark-shark-shark/main/shark-scriptlollol.txt",true))()
-
-    end
-
-})
-local Tab = Window:MakeTab({
-    Name = "极速传奇",
-	Icon = "rbxassetid://18270615016",
-	PremiumOnly = false
-})
-Tab:AddButton({
-    Name = "高级版",
-	Callback = function()
-	loadstring(game:HttpGet("https://pastebin.com/raw/bDiuSwyB"))()
-		end
-})
-local Tab = Window:MakeTab({
-    Name = "忍者传奇",
-	Icon = "rbxassetid://18270615016",
-	PremiumOnly = false
-})
-Tab:AddButton({
-    Name = "1",
-	Callback = function()
-	loadstring(game:HttpGet("https://raw.githubusercontent.com/XRoLLu/UWU/main/Ninja-Legenos.exe.lua"))()
-		end
-})
-Tab:AddButton({
-    Name = "2",
-	Callback = function()
-	loadstring(game:HttpGet("https://pastebin.com/raw/2UjrXwTV")))
-		end
-})
-local Section = Tab:AddSection({
-	Name = "传送"
-})
-Tab:AddButton({
-	Name = "传送到出生点",
-	Callback = function()
-      		game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(25.665502548217773, 3.4228405952453613, 29.919952392578125)
-  	end    
-})
-Tab:AddButton({
-	Name = "传送到附魔岛",
-	Callback = function()
-      		game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(51.17238235473633, 766.1807861328125, -138.44842529296875)
-  	end    
-})
-Tab:AddButton({
-	Name = "传送到神秘岛",
-	Callback = function()
-      		game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(171.97178649902344, 4047.380859375, 42.0699577331543)
-  	end    
-})
-Tab:AddButton({
-	Name = "传送到太空岛",
-	Callback = function()
-      		game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(148.83824157714844, 5657.18505859375, 73.5014877319336)
-  	end    
-})
-Tab:AddButton({
-	Name = "传送到冻土岛",
-	Callback = function()
-      		game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(139.28330993652344, 9285.18359375, 77.36406707763672)
-  	end    
-})
-Tab:AddButton({
-	Name = "传送到永恒岛",
-	Callback = function()
-      		game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(149.34817504882812, 13680.037109375, 73.3861312866211)
-  	end    
-})
-Tab:AddButton({
-	Name = "传送到沙暴岛",
-	Callback = function()
-      		game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(133.37144470214844, 17686.328125, 72.00334167480469)
-  	end    
-})
-Tab:AddButton({
-	Name = "传送到雷暴岛",
-	Callback = function()
-      		game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(143.19349670410156, 24070.021484375, 78.05432891845703)
-  	end    
-})
-Tab:AddButton({
-	Name = "传送到远古炼狱岛",
-	Callback = function()
-      		game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(141.27163696289062, 28256.294921875, 69.3790283203125)
-  	end    
-})
-Tab:AddButton({
-	Name = "传送到午夜暗影岛",
-	Callback = function()
-      		game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(132.74267578125, 33206.98046875, 57.495574951171875)
-  	end    
-})
-Tab:AddButton({
-	Name = "传送到神秘灵魂岛",
-	Callback = function()
-      		game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(137.76148986816406, 39317.5703125, 61.06639862060547)
-  	end    
-})
-Tab:AddButton({
-	Name = "传送到冬季奇迹岛",
-	Callback = function()
-      		game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(137.2720184326172, 46010.5546875, 55.941951751708984)
-  	end    
-})
-Tab:AddButton({
-	Name = "传送到黄金大师岛",
-	Callback = function()
-      		game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(128.32339477539062, 52607.765625, 56.69411849975586)
-  	end    
-})
-Tab:AddButton({
-	Name = "传送到龙传奇岛",
-	Callback = function()
-      		game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(146.35226440429688, 59594.6796875, 77.53300476074219)
-  	end    
-})
-Tab:AddButton({
-	Name = "传送到赛博传奇岛",
-	Callback = function()
-      		game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(137.3321075439453, 66669.1640625, 72.21722412109375)
-  	end    
-})
-Tab:AddButton({
-	Name = "传送到天岚超能岛",
-	Callback = function()
-      		game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(135.48077392578125, 70271.15625, 57.02311325073242)
-  	end    
-})
-Tab:AddButton({
-	Name = "传送到混沌传奇岛",
-	Callback = function()
-      		game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(148.58590698242188, 74442.8515625, 69.3177719116211)
-  	end    
-})
-Tab:AddButton({
-	Name = "传送到混沌传奇岛",
-	Callback = function()
-      		game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(148.58590698242188, 74442.8515625, 69.3177719116211)
-  	end    
-})
-Tab:AddButton({
-	Name = "传送到灵魂融合岛",
-	Callback = function()
-      		game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(136.9700927734375, 79746.984375, 58.54051971435547)
-  	end    
-})
-Tab:AddButton({
-	Name = "传送到黑暗元素岛",
-	Callback = function()
-      		game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(141.697265625, 83198.984375, 72.73107147216797)
-  	end    
-})
-Tab:AddButton({
-	Name = "传送到内心和平岛",
-	Callback = function()
-      		game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(135.3157501220703, 87051.0625, 66.78429412841797)
-  	end    
-})
-Tab:AddButton({
-	Name = "传送到炽烈漩涡岛",
-	Callback = function()
-      		game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(135.08216857910156, 91246.0703125, 69.56692504882812)
-  	end    
-})
-Tab:AddButton({
-	Name = "传送到35倍金币区域",
-	Callback = function()
-      		game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(86.2938232421875, 91245.765625, 120.54232788085938)
-  	end    
-})
-Tab:AddButton({
-	Name = "传送到死亡宠物",
-	Callback = function()
-      		game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(4593.21337890625, 130.87181091308594, 1430.2239990234375)
-  	end    
-})
-Tab:AddToggle(
-    {
-        Name = "自动挥舞",
-        Default = false,
-        Callback = function(x)
-            autoswing = x
-            if autoswing then
-                swinging()
-            end
-        end
-    }
-)
-Tab:AddToggle(
-    {
-        Name = "自动售卖",
-        Default = false,
-        Callback = function(x)
-            autosell = x
-            if autosell then
-                selling()
-            end
-        end
-    }
-)
-Tab:AddToggle(
-    {
-        Name = "存满了自动售卖",
-        Default = false,
-        Callback = function(x)
-            autosellmax = x
-            if autosellmax then
-                maxsell()
-            end
-        end
-    }
-)
-local Tab = Window:MakeTab({
     Name = "力量传奇",
 	Icon = "rbxassetid://18270615016",
 	PremiumOnly = false
-})
-Tab:AddButton({
-	Name = "传送到出生点",
-	Callback = function()
-      		      		game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(7, 3, 108)
-  	end    
-})
-Tab:AddButton({
-	Name = "传送到冰霜健身房",
-	Callback = function()
-      		      		game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(-2543, 13, -410)
-  	end    
-})
-Tab:AddButton({
-	Name = "传送到神话健身房",
-	Callback = function()
-      		      		game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(2177, 13, 1070)
-  	end    
-})
-Tab:AddButton({
-	Name = "传送到永恒健身房",
-	Callback = function()
-      		      		game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(-6686, 13, -1284)
-  	end    
-})
-Tab:AddButton({
-	Name = "传送到传说健身房",
-	Callback = function()
-      		      		game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(4676, 997, -3915)
-  	end    
-})
-Tab:AddButton({
-	Name = "传送到肌肉之王健身房",
-	Callback = function()
-      		      		game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(-8554, 22, -5642)
-  	end    
-})
-Tab:AddButton({
-	Name = "传送到安全岛",
-	Callback = function()
-      		      		game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(-39, 10, 1838)
-  	end    
-})
-Tab:AddButton({
-	Name = "传送到幸运抽奖区域",
-	Callback = function()
-      		      		game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(-2606, -2, 5753)
-  	end    
 })
 Tab:AddButton({
     Name = "修改力量",
@@ -1298,5 +1028,33 @@ Tab:AddButton({
     Name = "2",
 	Callback = function()
 	loadstring(game:HttpGet("https://raw.githubusercontent.com/jiankeQWQ/JianKeStudio/main/liliangchuanqi"))()
+		end
+})
+local Tab = Window:MakeTab({
+    Name = "极速传奇",
+	Icon = "rbxassetid://18270615016",
+	PremiumOnly = false
+})
+Tab:AddButton({
+    Name = "高级版",
+	Callback = function()
+	loadstring(game:HttpGet("https://pastebin.com/raw/jraZHEke"))()
+		end
+})
+local Tab = Window:MakeTab({
+    Name = "卢管脚本",
+	Icon = "rbxassetid://18270615016",
+	PremiumOnly = false
+})
+Tab:AddButton({
+    Name = "r6脚本",
+	Callback = function()
+	loadstring(game:HttpGet("https://pastefy.app/wa3v2Vgm/raw"))()
+		end
+})
+Tab:AddButton({
+    Name = "r15脚本",
+	Callback = function()
+	loadstring(game:HttpGet("https://pastefy.app/YZoglOyJ/raw"))()
 		end
 })
