@@ -1,0 +1,87 @@
+local OrionLib = loadstring(game:HttpGet("https://pastebin.com/raw/GExt49hn"))()
+local LBLG = Instance.new("ScreenGui", getParent)
+local LBL = Instance.new("TextLabel", getParent)
+local Background = Instance.new("ImageLabel")
+local player = game.Players.LocalPlayer
+
+LBLG.Name = "LBLG"
+LBLG.Parent = game.CoreGui
+LBLG.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+LBLG.Enabled = true
+LBL.Name = "LBL"
+LBL.Parent = LBLG
+LBL.BackgroundColor3 = Color3.new(1, 1, 1)
+LBL.BackgroundTransparency = 1
+LBL.BorderColor3 = Color3.new(0, 0, 0)
+LBL.Position = UDim2.new(0.75,0,0.010,0)
+LBL.Size = UDim2.new(0, 133, 0, 30)
+LBL.Font = Enum.Font.GothamSemibold
+LBL.Text = "TextLabel"
+LBL.TextColor3 = Color3.new(1, 1, 1)
+LBL.TextScaled = true
+LBL.TextSize = 14
+LBL.TextWrapped = true
+LBL.Visible = true
+Background.Name = "Background"
+Background.Parent = LBLG
+Background.BackgroundTransparency = 1 -- 确保背景图片不覆盖其他元素
+Background.Size = UDim2.new(1, 0, 1, 0) -- 背景图片填满整个屏幕
+Background.Image = "rbxassetid://17842264065" -- 外链图片URL
+Background.ImageTransparency = 0 -- 确保图片不透明
+Background.ScaleType = Enum.ScaleType.Crop -- 根据需要调整图片的缩放类型
+local FpsLabel = LBL
+local Heartbeat = game:GetService("RunService").Heartbeat
+local LastIteration, Start
+local FrameUpdateTable = { }
+
+local function HeartbeatUpdate()
+	LastIteration = tick()
+	for Index = #FrameUpdateTable, 1, -1 do
+		FrameUpdateTable[Index + 1] = (FrameUpdateTable[Index] >= LastIteration - 1) and FrameUpdateTable[Index] or nil
+	end
+	FrameUpdateTable[1] = LastIteration
+	local CurrentFPS = (tick() - Start >= 1 and #FrameUpdateTable) or (#FrameUpdateTable / (tick() - Start))
+	CurrentFPS = CurrentFPS - CurrentFPS % 1
+	FpsLabel.Text = ("北京时间:"..os.date("%H").."时"..os.date("%M").."分"..os.date("%S"))
+end
+Start = tick()
+Heartbeat:Connect(HeartbeatUpdate)
+local Window = OrionLib:MakeWindow({Name = "喵喵~⭐️星系列整合", HidePremium = false, SaveConfig = true,IntroText = "喵喵~⭐️星系列整合", ConfigFolder = "喵喵~⭐️星系列整合"})
+
+game:GetService("StarterGui"):SetCore("SendNotification",{ Title = "谢谢"; Text ="喵喵~⭐️星脚本"; Duration = 4; })
+
+local about = Window:MakeTab({
+    Name = "简介",
+    Icon = "rbxassetid://7734068321",
+    PremiumOnly = false
+
+})
+
+about:AddParagraph("作者⭐️星喵~")
+about:AddParagraph("整合系列")
+about:AddParagraph("总共3种")
+about:AddParagraph("感谢使用！")
+
+local Tab = Window:MakeTab({
+    Name = "喵喵~⭐️星脚本合集",
+	Icon = "rbxassetid://18270615016",
+	PremiumOnly = false
+})
+Tab:AddButton({
+    Name = "喵喵~⭐️星0.01",
+	Callback = function()
+	loadstring(game:HttpGet("https://raw.githubusercontent.com/dhvkgbhic/1578/main/tongyu"))()
+		end
+})
+Tab:AddButton({
+    Name = "喵喵~⭐️星v12",
+	Callback = function()
+	loadstring("\108\111\97\100\115\116\114\105\110\103\40\103\97\109\101\58\72\116\116\112\71\101\116\40\34\104\116\116\112\115\58\47\47\114\97\119\46\103\105\116\104\117\98\117\115\101\114\99\111\110\116\101\110\116\46\99\111\109\47\100\104\118\107\103\98\104\105\99\47\49\53\55\56\47\109\97\105\110\47\105\110\107\100\102\34\41\41\40\41")()
+		end
+})
+Tab:AddButton({
+    Name = "⭐️☆星中心",
+	Callback = function()
+	loadstring("\108\111\97\100\115\116\114\105\110\103\40\103\97\109\101\58\72\116\116\112\71\101\116\40\34\104\116\116\112\115\58\47\47\112\97\115\116\101\98\105\110\46\99\111\109\47\114\97\119\47\49\82\50\87\69\76\120\67\34\41\41\40\41")()
+		end
+})
