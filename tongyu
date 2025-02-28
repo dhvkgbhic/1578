@@ -1009,6 +1009,19 @@ Tab:AddButton({
 	loadstring(game:HttpGet("https://pastefy.app/YZoglOyJ/raw"))()
 		end
 })
+local Tab = Window:MakeTab({
+    Name = "用星中心",
+	Icon = "rbxassetid://18270615016",
+	PremiumOnly = false
+})
+
+Tab:AddButton({
+    Name = "星中心",
+	Callback = function()
+getgenv().xingmiao="喵喵~⭐️星系列整合"
+loadstring(game:HttpGet("https://raw.githubusercontent.com/dhvkgbhic/1578/main/zhx"))()
+	end
+})
 local Section = Tab:AddSection({
 
 	Name = "⭐星~喵创作"
