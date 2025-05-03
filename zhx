@@ -1,4 +1,4 @@
-local OrionLib = loadstring(game:HttpGet("https://pastebin.com/raw/GExt49hn"))()
+local OrionLib = loadstring(game:HttpGet("local OrionLib = loadstring(game:HttpGet("https://raw.githubusercontent.com/dhvkgbhic/1578/blob/main/ui"))()"))()
 local LBLG = Instance.new("ScreenGui", getParent)
 local LBL = Instance.new("TextLabel", getParent)
 local Background = Instance.new("ImageLabel")
