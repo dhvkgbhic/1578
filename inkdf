@@ -235,7 +235,7 @@ end
 
 Check.MouseButton1Click:connect(function()
 	_G.BeiqiuCenter="喵喵～星"
-	loadstring(game:HttpGet("https://raw.githubusercontent.com/dhvkgbhic/1578/blob/main/1245")()
+	loadstring(game:HttpGet("https://raw.githubusercontent.com/dhvkgbhic/1578/refs/heads/main/1245")()
 	Main:Destroy()
 end)
 
