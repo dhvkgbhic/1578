@@ -150,7 +150,7 @@ loadstring(game:HttpGet("https://raw.githubusercontent.com/TtmScripter/OtherScri
   end
 })
 Tab:AddButton({
-	Name = "点击传送工器",
+	Name = "点击传送工具",
 	Callback = function()
 
 mouse = game.Players.LocalPlayer:GetMouse() tool = Instance.new("Tool") tool.RequiresHandle = false tool.Name = "喵喵~⭐️星传送工具" tool.Activated:connect(function() local pos = mouse.Hit+Vector3.new(0,2.5,0) pos = CFrame.new(pos.X,pos.Y,pos.Z) game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = pos end) tool.Parent = game.Players.LocalPlayer.Backpack
@@ -448,7 +448,7 @@ Tab:AddButton({
 
 	Callback = function()
 
-loadstring("\108\111\97\100\115\116\114\105\110\103\40\103\97\109\101\58\72\116\116\112\71\101\116\40\34\104\116\116\112\115\58\47\47\112\97\115\116\101\98\105\110\46\99\111\109\47\114\97\119\47\90\66\122\99\84\109\49\102\34\41\41\40\41\10")()
+loadstring(game:HttpGet("https://raw.githubusercontent.com/dhvkgbhic/1578/refs/heads/main/flygui"))()
 
   	end    
 
@@ -456,7 +456,7 @@ loadstring("\108\111\97\100\115\116\114\105\110\103\40\103\97\109\101\58\72\116\
 Tab:AddButton({
     Name = "vfly",
 	Callback = function()
-	loadstring(game:HttpGet("https://pastebin.com/raw/MHE1cbWF"))()
+	loadstring(game:HttpGet("https://raw.githubusercontent.com/HubStudioInjection/Exploits/refs/heads/main/VFly.lua"))()
 		end
 })
 Tab:AddButton({
@@ -1095,7 +1095,7 @@ local Tab = Window:MakeTab({
 	PremiumOnly = false
 })
 Tab:AddButton({
-    Name = "vape v4☆",
+    Name = "vape v4☆  比较隐蔽（在ui上）",
 	Callback = function()
 	loadstring(game:HttpGet("https://raw.githubusercontent.com/7GrandDadPGN/VapeV4ForRoblox/main/NewMainScript.lua", true))()
 		end
