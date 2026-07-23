@@ -42,9 +42,9 @@ local function HeartbeatUpdate()
 end
 Start = tick()
 Heartbeat:Connect(HeartbeatUpdate)
-local Window = OrionLib:MakeWindow({Name = "喵喵~⭐️星脚本0.01", HidePremium = false, SaveConfig = true,IntroText = "喵喵~⭐️星脚本0.01", ConfigFolder = "喵喵~⭐️星脚本0.01"})
+local Window = OrionLib:MakeWindow({Name = "喵喵~⭐️星脚本0.02", HidePremium = false, SaveConfig = true,IntroText = "喵喵~⭐️星脚本0.02", ConfigFolder = "喵喵~⭐️星脚本0.02"})
 
-game:GetService("StarterGui"):SetCore("SendNotification",{ Title = "喵喵~⭐️星脚本0.01"; Text ="喵喵~⭐️星脚本0.01"; Duration = 4; })
+game:GetService("StarterGui"):SetCore("SendNotification",{ Title = "喵喵~⭐️星脚本0.02"; Text ="喵喵~⭐️星脚本0.02"; Duration = 4; })
 
 local about = Window:MakeTab({
     Name = "简介",
@@ -56,8 +56,8 @@ local about = Window:MakeTab({
 about:AddParagraph("作者⭐️星喵~3284669204")
 about:AddParagraph("3284669204dhvkgbhic⭐️星喵~")
 about:AddParagraph("作者⭐星喵~")
-about:AddParagraph("本次修复bug，更新vfly，forsaken，vape v4")
-about:AddParagraph("更换ui颜色")
+about:AddParagraph("本次修复bug，更新vfly，fly v3")
+about:AddParagraph("只是回来啦！！！   ε٩(๑> ₃ <)۶з")
 
 local Tab =Window:MakeTab({
 
