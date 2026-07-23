@@ -154,7 +154,7 @@ Description.BorderSizePixel = 0
 Description.Position = UDim2.new(0.210526317, 0, -0.0340909101, 0)
 Description.Size = UDim2.new(0, 131, 0, 50)
 Description.Font = Enum.Font.SourceSans
-Description.Text = "well"
+Description.Text = "v12"
 Description.TextColor3 = Color3.fromRGB(227, 227, 227)
 Description.TextSize = 24.000
 
@@ -234,8 +234,9 @@ if headImage ~= "" then
 end
 
 Check.MouseButton1Click:connect(function()
-	_G.BeiqiuCenter="喵喵～星"
-	loadstring(game:HttpGet("https://raw.githubusercontent.com/dhvkgbhic/1578/refs/heads/main/1245")()
+	_G.BeiqiuCenter="v12"
+	loadstring(game:HttpGet("https://raw.githubusercontent.com/dhvkgbhic/1578/refs/heads/main/1245"))()
+
 	Main:Destroy()
 end)
 
