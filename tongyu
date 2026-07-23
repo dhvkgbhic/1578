@@ -1077,13 +1077,13 @@ Tab:AddButton({
 		end
 })
 local Tab = Window:MakeTab({
-    Name = "用星中心",
+    Name = "⭐️整合",
         Icon = "rbxassetid://18270615016",
         PremiumOnly = false
 })
 
 Tab:AddButton({
-    Name = "星中心",
+    Name = "整合",
         Callback = function()
 getgenv().xingmiao="喵喵~⭐️星系列整合"
 loadstring(game:HttpGet("https://raw.githubusercontent.com/dhvkgbhic/1578/main/zhx"))()
