@@ -1191,6 +1191,3 @@ Tab:AddButton({
           end
 
 })
- Tab:AddParagraph("注入fflags后要在忍者内的小齿轮进行Rejoin")
- Tab:AddParagraph("功能（fflags）：灰色天空\解帧\稳ping")
- 
