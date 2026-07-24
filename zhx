@@ -64,7 +64,7 @@ local Tab = Window:MakeTab({
 	PremiumOnly = false
 })
 Tab:AddButton({
-    Name = "喵喵~⭐️星0.01",
+    Name = "喵喵~⭐️星0.02",
 	Callback = function()
 	getgenv().xingmiao="免费逢合脚本"loadstring(game:HttpGet("https://raw.githubusercontent.com/dhvkgbhic/1578/main/tongyu"))()
 		end
