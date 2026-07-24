@@ -1148,12 +1148,3 @@ Tab:AddButton({
         loadstring(game:HttpGet("https://raw.githubusercontent.com/ChinaQY/Scripts/Main/Forsaken"))()
                 end
 })
-local Tab =Window:MakeTab({
-
-        Name = "fflags bloxstrap脚本⭐️⭐️⭐️",
-
-        Icon = "rbxassetid://18270615016",
-
-        PremiumOnly = false
-
-})
