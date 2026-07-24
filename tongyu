@@ -70,17 +70,6 @@ local Tab =Window:MakeTab({
 
 })
 
-Tab:AddButton({
-
-        Name = "复制作者QQ",
-
-        Callback = function()
-
-     setclipboard("3284669204")
-
-          end
-
-})
 
 Tab:AddButton({
 
@@ -713,6 +702,9 @@ Tab:AddButton({
 local Section = Tab:AddSection({
         Name = "以上是脚本（☁️云端更新）"
 })
+
+Tab:AddLabel("本次更新包括：vr hands,headless&korblox")
+
 Tab:AddButton({
     Name = "fe剑",
         Callback = function()
@@ -1095,4 +1087,35 @@ Tab:AddButton({
         Callback = function()
         loadstring(game:HttpGet("https://rawscripts.net/raw/Universal-Script-OP-bloxstrap-mobile-71317"))()
                         end
+})
+Tab:AddLabel("以下是fflags（点击复制）")
+Tab:AddLabel("包括gray sky，稳ping，解帧")
+
+Tab:AddButton({
+
+        Name = "fflags",
+
+        Callback = function()
+
+     setclipboard("{
+    "DFIntDebugDynamicRenderKiloPixels": 33177,
+    "FIntDebugForceMSAASamples": "8",
+    "DFIntTaskSchedulerTargetFps": "99999999",
+    "FFlagDebugDisplayFPS": "True",
+    "FFlagDebugGraphicsDisableDirect3D11": "True",
+    "FFlagDebugGraphicsPreferVulkan": "True",
+    "DFFlagDebugPauseVoxelizer": "True",
+    "FIntRenderShadowIntensity": "0",
+    "FIntRenderShadowmapBias": "-1",
+    "FFlagDisablePostFx": "True",
+    "FIntFRMMaxGrassDistance": "0",
+    "FIntRenderGrassDetailStrands": "0",
+    "FIntFRMMinGrassDistance": "0",
+    "FFlagDebugSkyGray": "True",
+    "DFFlagTextureQualityOverrideEnabled": "True",
+    "DFIntTextureQualityOverride": "1"
+}")
+
+          end
+
 })
