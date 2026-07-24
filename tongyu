@@ -65,7 +65,7 @@ local about = Window:MakeTab({
 about:AddParagraph("作者⭐️星喵~3284669204")
 about:AddParagraph("3284669204dhvkgbhic⭐️星喵~")
 about:AddParagraph("作者⭐星喵~")
-about:AddParagraph("本次修复bug，更新vfly，fly v3")
+about:AddParagraph("本次修复bug，更新vfly，fly v3,fflags,fe整合回来了不过换了ui")
 about:AddParagraph("只是回来啦！！！   ε٩(๑> ₃ <)۶з")
 
 local Tab =Window:MakeTab({
