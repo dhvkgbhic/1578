@@ -57,3 +57,7 @@ xiaoxing:Button("r15体型设置", function()
  xiaoxing:Button("键盘", function()
 loadstring(game:HttpGet("https://raw.githubusercontent.com/advxzivhsjjdhxhsidifvsh/mobkeyboard/main/main.txt", true))()
 end)
+
+ xiaoxing:Button("fe无头断腿r6", function()
+ loadstring(game:HttpGet("https://raw.githubusercontent.com/xiguazhi233/fake-headless-and-korblox/refs/heads/main/0.3.txt"))()
+end)
