@@ -67,6 +67,7 @@ about:AddParagraph("3284669204dhvkgbhic⭐️星喵~")
 about:AddParagraph("作者⭐星喵~")
 about:AddParagraph("本次修复bug，更新vfly，fly v3")
 about:AddParagraph("只是回来啦！！！   ε٩(๑> ₃ <)۶з")
+about:AddParagraph("fe脚本已修复！！fflags脚本更新！！")
 
 local Tab =Window:MakeTab({
 
@@ -1156,14 +1157,10 @@ Tab:AddButton({
         loadstring(game:HttpGet("https://raw.githubusercontent.com/ChinaQY/Scripts/Main/Forsaken"))()
                 end
 })
-local Tab =Window:MakeTab({
-
-        Name = "fflags bloxstrap脚本⭐️⭐️⭐️",
-
+local Tab = Window:MakeTab({
+    Name = "fflags bloxstrap脚本⭐️⭐️⭐️",
         Icon = "rbxassetid://18270615016",
-
         PremiumOnly = false
-
 })
 Tab:AddButton({
   Name = "bloxstrap",
