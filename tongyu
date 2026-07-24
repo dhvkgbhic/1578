@@ -47,14 +47,6 @@ local Window = OrionLib:MakeWindow({Name = "喵喵~⭐️星脚本0.02", HidePre
 game:GetService("StarterGui"):SetCore("SendNotification",{ Title = "喵喵~⭐️星脚本0.02"; Text ="喵喵~⭐️星脚本0.02"; Duration = 4; })
 
 
-OrionLib:MakeNotification({
-        Name = "⭐️星喵~",
-        Content = "欢迎使用免费脚本",
-        Image = "rbxassetid://18270615016",
-        Time = 2
-
-})
-
 local about = Window:MakeTab({
     Name = "简介",
     Icon = "rbxassetid://18270615016",
