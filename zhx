@@ -70,7 +70,7 @@ Tab:AddButton({
 		end
 })
 Tab:AddButton({
-    Name = "喵喵~⭐️星v12",
+    Name = "喵喵~⭐️星v12（已停用）",
 	Callback = function()
 	loadstring(game:HttpGet("https://raw.githubusercontent.com/dhvkgbhic/1578/refs/heads/main/inkdf"))()
 		end
