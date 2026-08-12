@@ -931,7 +931,9 @@ Tab:AddButton({
 Tab:AddButton({
     Name = "翻译器",
         Callback = function()
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/JsYb666/Item/refs/heads/main/Auto-language"))()
+        TX = "TX Script"
+Script = "全自动翻译"
+loadstring(game:HttpGet("https://raw.githubusercontent.com/JsYb666/Item/refs/heads/main/Auto-language"))()
           end
 })
 local Tab = Window:MakeTab({
