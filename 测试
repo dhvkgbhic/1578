@@ -57,6 +57,230 @@ OrionLib:MakeNotification({
 
 local Tab = Window:MakeTab({
 
+    Name = "通用",
+
+    Icon = "rbxassetid://18270615016",
+
+    PremiumOnly = false
+
+})
+
+Tab:AddToggle({
+    Name = "玩家ESP透视",
+    Default = false,
+    Callback = (function()
+        local loopThread = nil
+        local espCache = {} -- 缓存所有创建的透视对象，用于关闭时清理
+
+        -- 清理单个玩家的ESP组件
+        local function clearPlayerEsp(player)
+            if espCache[player] then
+                if espCache[player].Box then espCache[player].Box:Destroy() end
+                if espCache[player].NameGui then espCache[player].NameGui:Destroy() end
+                espCache[player] = nil
+            end
+        end
+
+        -- 给玩家角色添加描边+名字透视
+        local function addPlayerEsp(player)
+            local character = player.Character
+            if not character or not character:FindFirstChild("HumanoidRootPart") then return end
+
+            -- 避免重复创建
+            if espCache[player] then return end
+
+            -- 红色描边+半透明红色填充
+            local box = Instance.new("SelectionBox")
+            box.Name = "ESP_Outline"
+            box.LineColor3 = Color3.new(1, 0, 0)
+            box.SurfaceColor3 = Color3.new(1, 0, 0)
+            box.SurfaceTransparency = 0.7
+            box.AlwaysOnTop = true
+            box.Adornee = character
+            box.Parent = game.Workspace
+
+            -- 头顶用户名显示
+            local nameGui = Instance.new("BillboardGui")
+            nameGui.Name = "ESP_NameLabel"
+            nameGui.Size = UDim2.new(0, 120, 0, 25)
+            nameGui.StudsOffset = Vector3.new(0, 2.5, 0)
+            nameGui.AlwaysOnTop = true
+            nameGui.MaxDistance = math.huge
+
+            local nameText = Instance.new("TextLabel")
+            nameText.BackgroundTransparency = 1
+            nameText.TextColor3 = Color3.new(1, 1, 1)
+            nameText.TextScaled = true
+            nameText.Font = Enum.Font.SourceSansBold
+            nameText.Text = player.Name
+            nameText.Size = UDim2.new(1, 0, 1, 0)
+            nameText.Parent = nameGui
+
+            nameGui.Parent = character:WaitForChild("Head")
+
+            espCache[player] = {Box = box, NameGui = nameGui}
+        end
+
+        return function(Value)
+            -- 关闭开关：销毁所有透视对象，终止循环
+            if not Value then
+                if loopThread then
+                    task.cancel(loopThread)
+                    loopThread = nil
+                end
+                for player in pairs(espCache) do
+                    clearPlayerEsp(player)
+                end
+                table.clear(espCache)
+                return
+            end
+
+            if loopThread then return end
+
+            -- 开启循环：持续刷新玩家ESP
+            loopThread = task.spawn(function()
+                while true do
+                    local players = game:GetService("Players"):GetPlayers()
+                    -- 给所有有角色的玩家添加ESP
+                    for _, player in ipairs(players) do
+                        if player.Character then
+                            pcall(addPlayerEsp, player)
+                        end
+                    end
+                    -- 清理已离开/角色消失的玩家缓存
+                    for player in pairs(espCache) do
+                        if not player:IsDescendantOf(game.Players) or not player.Character then
+                            clearPlayerEsp(player)
+                        end
+                    end
+                    task.wait(0.3)
+                end
+            end)
+        end
+    end)()
+})
+Tab:AddToggle({
+    Name = "穿墙",
+    Default = false,
+    Callback = (function()
+        local loopThread = nil
+        local LocalPlayer = game:GetService("Players").LocalPlayer
+        local rayParams = RaycastParams.new()
+        rayParams.FilterType = Enum.RaycastFilterType.Exclude
+
+        return function(Value)
+            -- 关闭开关：终止循环，恢复角色全部碰撞
+            if not Value then
+                if loopThread then
+                    task.cancel(loopThread)
+                    loopThread = nil
+                end
+                pcall(function()
+                    local char = LocalPlayer.Character
+                    if char then
+                        for _, part in ipairs(char:GetDescendants()) do
+                            if part:IsA("BasePart") then
+                                part.CanCollide = true
+                            end
+                        end
+                    end
+                end)
+                return
+            end
+
+            if loopThread then return end
+
+            loopThread = task.spawn(function()
+                while true do
+                    pcall(function()
+                        local character = LocalPlayer.Character
+                        local root = character and character:FindFirstChild("HumanoidRootPart")
+                        local humanoid = character and character:FindFirstChild("Humanoid")
+
+                        if character and root and humanoid then
+                            -- 关闭角色所有部件碰撞，实现水平穿墙
+                            for _, part in ipairs(character:GetDescendants()) do
+                                if part:IsA("BasePart") then
+                                    part.CanCollide = false
+                                end
+                            end
+
+                            -- 向下发射射线检测地面，排除角色自身
+                            rayParams.FilterDescendantsInstances = {character}
+                            local groundCheck = workspace:Raycast(
+                                root.Position,
+                                Vector3.new(0, -6, 0),
+                                rayParams
+                            )
+
+                            -- 检测到地面则修正角色高度，防止坠落
+                            if groundCheck then
+                                local targetHeight = groundCheck.Position.Y + humanoid.HipHeight + root.Size.Y / 2
+                                root.CFrame = CFrame.new(root.Position.X, targetHeight, root.Position.Z)
+                            end
+                        end
+                    end)
+                    task.wait(0.05)
+                end
+            end)
+        end
+    end)()
+})
+Tab:AddToggle({
+    Name = "解除视角缩放限制",
+    Default = false,
+    Callback = (function()
+        local loopThread = nil
+        local LocalPlayer = game:GetService("Players").LocalPlayer
+        local originalMin = nil
+        local originalMax = nil
+
+        return function(Value)
+            -- 关闭开关：终止循环，恢复游戏原始视角限制
+            if not Value then
+                if loopThread then
+                    task.cancel(loopThread)
+                    loopThread = nil
+                end
+                -- 还原原始视角参数
+                pcall(function()
+                    if originalMin ~= nil then
+                        LocalPlayer.CameraMinZoomDistance = originalMin
+                    end
+                    if originalMax ~= nil then
+                        LocalPlayer.CameraMaxZoomDistance = originalMax
+                    end
+                    originalMin = nil
+                    originalMax = nil
+                end)
+                return
+            end
+
+            if loopThread then return end
+
+            -- 开启前先保存当前游戏的原始视角数值
+            pcall(function()
+                originalMin = LocalPlayer.CameraMinZoomDistance
+                originalMax = LocalPlayer.CameraMaxZoomDistance
+            end)
+
+            loopThread = task.spawn(function()
+                while true do
+                    pcall(function()
+                        -- 最小缩放设为0，可拉至第一人称以内
+                        LocalPlayer.CameraMinZoomDistance = 0
+                        -- 最大缩放设为极大值，可自由拉远视角
+                        LocalPlayer.CameraMaxZoomDistance = 2000
+                    end)
+                    task.wait(0.1)
+                end
+            end)
+        end
+    end)()
+})
+
+local Tab = Window:MakeTab({
+
     Name = "拉屎模拟器",
 
     Icon = "rbxassetid://18270615016",
