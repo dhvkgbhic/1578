@@ -634,3 +634,29 @@ Tab:AddToggle({
         end
     end)()
 })
+local Tab = Window:MakeTab({
+    Name = "另一個拉pop模擬器",
+        Icon = "rbxassetid://18270615016",
+        PremiumOnly = false
+})
+
+Tab:AddToggle({
+    Name = "Fart&Poop循环",
+    Default = false,
+    Callback = function(Value)
+        if Value then
+            loopTask = task.spawn(function()
+                while task.wait(1) do
+                    -- 两个事件一起触发
+                    game:GetService("ReplicatedStorage"):WaitForChild("FartEvent"):FireServer()
+                    game:GetService("ReplicatedStorage"):WaitForChild("SpawnPoopEvent"):FireServer()
+                end
+            end)
+        else
+            if loopTask then
+                task.cancel(loopTask)
+                loopTask = nil
+            end
+        end
+    end
+})
