@@ -646,7 +646,7 @@ Tab:AddToggle({
     Callback = function(Value)
         if Value then
             loopTask = task.spawn(function()
-                while task.wait(1) do
+                while task.wait(0.01) do
                     -- 两个事件一起触发
                     game:GetService("ReplicatedStorage"):WaitForChild("FartEvent"):FireServer()
                     game:GetService("ReplicatedStorage"):WaitForChild("SpawnPoopEvent"):FireServer()
