@@ -1018,3 +1018,191 @@ Tab:AddToggle({
         end
     end
 })
+local Tab = Window:MakeTab({
+    Name = "放音乐",
+        Icon = "rbxassetid://18270615016",
+        PremiumOnly = false
+})
+-- 声明变量，保存Sound实例
+local musicSound = nil
+
+-- 在UI库中添加音乐开关（此代码假设您已定义 Tab 变量）
+Tab:AddToggle({
+    Name = "义勇军进行曲",
+    Default = false,
+    Callback = function(Value)
+        if Value then
+            -- 打开开关：创建并播放音乐
+            if not musicSound then
+                -- 在 SoundService 下创建Sound对象，确保客户端本地能正常播放 [citation:2][citation:8]
+                musicSound = Instance.new("Sound")
+                musicSound.Name = "ClientMusicPlayer"
+                musicSound.Parent = game:GetService("SoundService")
+                
+                -- 设置核心属性
+                musicSound.SoundId = "rbxassetid://1845918434" -- 示例音频ID：经典地牢风
+                musicSound.Looped = true -- 循环播放
+                musicSound.Volume = 0.8 -- 音量设定为 50%
+            end
+            musicSound:Play()
+            
+        else
+            -- 关闭开关：停止播放
+            if musicSound then
+                musicSound:Stop()
+            end
+        end
+    end
+})
+-- 声明变量，保存Sound实例
+local musicSound = nil
+
+-- 在UI库中添加音乐开关（此代码假设您已定义 Tab 变量）
+Tab:AddToggle({
+    Name = "植物大战僵尸",
+    Default = false,
+    Callback = function(Value)
+        if Value then
+            -- 打开开关：创建并播放音乐
+            if not musicSound then
+                -- 在 SoundService 下创建Sound对象，确保客户端本地能正常播放 [citation:2][citation:8]
+                musicSound = Instance.new("Sound")
+                musicSound.Name = "ClientMusicPlayer"
+                musicSound.Parent = game:GetService("SoundService")
+                
+                -- 设置核心属性
+                musicSound.SoundId = "rbxassetid://158260415" -- 示例音频ID：经典地牢风
+                musicSound.Looped = true -- 循环播放
+                musicSound.Volume = 0.5 -- 音量设定为 50%
+            end
+            musicSound:Play()
+            
+        else
+            -- 关闭开关：停止播放
+            if musicSound then
+                musicSound:Stop()
+            end
+        end
+    end
+})
+-- 声明变量，保存Sound实例
+local musicSound = nil
+
+-- 在UI库中添加音乐开关（此代码假设您已定义 Tab 变量）
+Tab:AddToggle({
+    Name = "我的世界",
+    Default = false,
+    Callback = function(Value)
+        if Value then
+            -- 打开开关：创建并播放音乐
+            if not musicSound then
+                -- 在 SoundService 下创建Sound对象，确保客户端本地能正常播放 [citation:2][citation:8]
+                musicSound = Instance.new("Sound")
+                musicSound.Name = "ClientMusicPlayer"
+                musicSound.Parent = game:GetService("SoundService")
+                
+                -- 设置核心属性
+                musicSound.SoundId = "rbxassetid://3188394654" -- 示例音频ID：经典地牢风
+                musicSound.Looped = true -- 循环播放
+                musicSound.Volume = 0.5 -- 音量设定为 50%
+            end
+            musicSound:Play()
+            
+        else
+            -- 关闭开关：停止播放
+            if musicSound then
+                musicSound:Stop()
+            end
+        end
+    end
+})
+-- 声明变量，保存Sound实例
+local musicSound = nil
+
+-- 在UI库中添加音乐开关（此代码假设您已定义 Tab 变量）
+Tab:AddToggle({
+    Name = "蜜雪冰城",
+    Default = false,
+    Callback = function(Value)
+        if Value then
+            -- 打开开关：创建并播放音乐
+            if not musicSound then
+                -- 在 SoundService 下创建Sound对象，确保客户端本地能正常播放 [citation:2][citation:8]
+                musicSound = Instance.new("Sound")
+                musicSound.Name = "ClientMusicPlayer"
+                musicSound.Parent = game:GetService("SoundService")
+                
+                -- 设置核心属性
+                musicSound.SoundId = "rbxassetid://6991604183" -- 示例音频ID：经典地牢风
+                musicSound.Looped = true -- 循环播放
+                musicSound.Volume = 0.5 -- 音量设定为 50%
+            end
+            musicSound:Play()
+            
+        else
+            -- 关闭开关：停止播放
+            if musicSound then
+                musicSound:Stop()
+            end
+        end
+    end
+})
+
+local musicSound = nil
+local currentIndex = 0 -- 用于记录当前播放到第几首
+
+-- 你提供的音乐ID列表
+local musicIds = {
+    "1845918434",
+    "76910785037309574742",
+    "1843497734792323017",
+    "1840172845251931527",
+    "13349403659062549544",
+    "47760611121840297174",
+    "26181587289062549544",
+    "55599886988491769438",
+    "67978642535543577444",
+    "8494188412632277463",
+    "78011029467309537814",
+    "85056756035831972078",
+    "64411004297908417389",
+    "8565985995945531874",
+    "39000675248491769438"
+}
+
+Tab:AddToggle({
+    Name = "随机播放音乐 (每开一次切换)",
+    Default = false,
+    Callback = function(Value)
+        if Value then
+            -- 打开开关：创建或获取Sound实例
+            if not musicSound then
+                musicSound = Instance.new("Sound")
+                musicSound.Name = "ClientMusicPlayer"
+                musicSound.Parent = game:GetService("SoundService")
+                musicSound.Looped = true
+                musicSound.Volume = 0.5
+            end
+            
+            -- 每次打开开关，索引+1，实现不重复播放
+            currentIndex = currentIndex + 1
+            -- 如果播放到了列表末尾，重置回第一首（循环列表）
+            if currentIndex > #musicIds then
+                currentIndex = 1
+            end
+            
+            -- 获取并设定当前歌曲
+            local selectedId = musicIds[currentIndex]
+            musicSound.SoundId = "rbxassetid://" .. selectedId
+            
+            -- 播放音乐
+            musicSound:Play()
+            
+        else
+            -- 关闭开关：停止播放
+            if musicSound then
+                musicSound:Stop()
+            end
+        end
+    end
+})
