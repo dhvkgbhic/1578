@@ -9,15 +9,15 @@ local Window = OrionLib:MakeWindow({
 })
 
 local Tab = Window:MakeTab({
-    Name = "音乐",
+    Name = "音乐控制",
     Icon = "rbxassetid://18270615016",
     PremiumOnly = false
 })
 
 -- 核心变量
 local MusicSound = nil
-local CurrentSoundId = "rbxassetid://0" -- 默认占位符
-local CurrentVolume = 5 -- 默认音量：5 (对应0.5)
+local CurrentSoundId = "rbxassetid://0" 
+local CurrentVolume = 5 -- 默认音量 (对应0.5)
 
 -- 搜索框：输入音频ID
 Tab:AddTextbox({
@@ -25,7 +25,6 @@ Tab:AddTextbox({
     Default = "例如: 1845918434",
     TextDisappear = true,
     Callback = function(Value)
-        -- 自动加上rbxassetid://前缀
         CurrentSoundId = "rbxassetid://" .. Value
         OrionLib:MakeNotification({
             Name = "成功",
@@ -35,19 +34,23 @@ Tab:AddTextbox({
     end
 })
 
--- 音量控制滑条 (新增功能)
+-- 修复后的音量控制滑条
 Tab:AddSlider({
-    Name = "音量控制",
+    Name = "音量控制 (0-10)",
     MinValue = 0,
     MaxValue = 10,
     Default = CurrentVolume,
-    Color = Color3.fromRGB(255, 0, 0), -- 滑条颜色，可改为(0,255,0)绿色等
-    Increment = 1, -- 每次拖动增加1
+    Color = Color3.fromRGB(255, 0, 0),
+    Increment = 1,
     Callback = function(Value)
-        CurrentVolume = Value
+        -- 强制转换为数字，防止修改版库返回字符串导致报错
+        local numValue = tonumber(Value) or CurrentVolume
+        CurrentVolume = numValue
+        
         if MusicSound then
-            -- Roblox音量范围是0-1，所以除以10
-            MusicSound.Volume = Value / 10
+            pcall(function()
+                MusicSound.Volume = numValue / 10
+            end)
         end
     end
 })
@@ -68,13 +71,16 @@ Tab:AddButton({
         if not MusicSound then
             MusicSound = Instance.new("Sound")
             MusicSound.Name = "PlayerMusic"
-            MusicSound.Parent = game:GetService("SoundService") -- 挂在SoundService下，死亡不中断
-            MusicSound.Looped = true -- 循环播放
-            MusicSound.Volume = CurrentVolume / 10 -- 应用当前设置的音量
+            MusicSound.Parent = game:GetService("SoundService")
+            MusicSound.Looped = true
+            -- 在创建声音的时候，立刻应用你设置的音量
+            MusicSound.Volume = tonumber(CurrentVolume) / 10
         end
         
         MusicSound.SoundId = CurrentSoundId
-        MusicSound:Play()
+        pcall(function()
+            MusicSound:Play()
+        end)
     end
 })
 
@@ -99,15 +105,6 @@ Tab:AddButton({
     end
 })
 
--- 继续播放按钮
-Tab:AddButton({
-    Name = "继续播放音乐",
-    Callback = function()
-        if MusicSound then
-            MusicSound:Resume()
-        end
-    end
-})
 
 -- 初始化UI
 OrionLib:Init()
