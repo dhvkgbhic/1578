@@ -167,6 +167,58 @@ Tab:AddToggle({
     end
 })
 
+Tab:AddToggle({
+    Name = "穿墙",
+    Default = false,
+    Callback = (function()
+        local loopThread = nil
+        local LocalPlayer = game:GetService("Players").LocalPlayer
+
+        return function(Value)
+            -- 关闭开关：终止循环，恢复角色碰撞
+            if not Value then
+                if loopThread then
+                    task.cancel(loopThread)
+                    loopThread = nil
+                end
+                -- 恢复当前角色的碰撞属性
+                pcall(function()
+                    local char = LocalPlayer.Character
+                    if char then
+                        for _, part in ipairs(char:GetDescendants()) do
+                            if part:IsA("BasePart") then
+                                part.CanCollide = true
+                            end
+                        end
+                    end
+                end)
+                return
+            end
+
+            -- 防止重复开启线程
+            if loopThread then return end
+
+            loopThread = task.spawn(function()
+                while true do
+                    pcall(function()
+                        local character = LocalPlayer.Character
+                        -- 角色存在且有根部件时才执行
+                        if character and character:FindFirstChild("HumanoidRootPart") then
+                            -- 遍历角色所有物理部件，关闭碰撞
+                            for _, part in ipairs(character:GetDescendants()) do
+                                if part:IsA("BasePart") then
+                                    part.CanCollide = false
+                                end
+                            end
+                        end
+                    end)
+                    task.wait(0.1)
+                end
+            end)
+        end
+    end)()
+})
+
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local LocalPlayer = Players.LocalPlayer
@@ -211,7 +263,7 @@ RunService.RenderStepped:Connect(function(dt)
     
     -- 每 3 秒刷新一次玩家列表
     RefreshTimer = RefreshTimer + dt
-    if RefreshTimer >= 3 then
+    if RefreshTimer >= 0.2 then
         RefreshTimer = 0
         
         -- 清理已经不在服里或没有角色的玩家的视觉框
@@ -266,57 +318,7 @@ RunService.RenderStepped:Connect(function(dt)
     end
 end)
 
-Tab:AddToggle({
-    Name = "穿墙",
-    Default = false,
-    Callback = (function()
-        local loopThread = nil
-        local LocalPlayer = game:GetService("Players").LocalPlayer
 
-        return function(Value)
-            -- 关闭开关：终止循环，恢复角色碰撞
-            if not Value then
-                if loopThread then
-                    task.cancel(loopThread)
-                    loopThread = nil
-                end
-                -- 恢复当前角色的碰撞属性
-                pcall(function()
-                    local char = LocalPlayer.Character
-                    if char then
-                        for _, part in ipairs(char:GetDescendants()) do
-                            if part:IsA("BasePart") then
-                                part.CanCollide = true
-                            end
-                        end
-                    end
-                end)
-                return
-            end
-
-            -- 防止重复开启线程
-            if loopThread then return end
-
-            loopThread = task.spawn(function()
-                while true do
-                    pcall(function()
-                        local character = LocalPlayer.Character
-                        -- 角色存在且有根部件时才执行
-                        if character and character:FindFirstChild("HumanoidRootPart") then
-                            -- 遍历角色所有物理部件，关闭碰撞
-                            for _, part in ipairs(character:GetDescendants()) do
-                                if part:IsA("BasePart") then
-                                    part.CanCollide = false
-                                end
-                            end
-                        end
-                    end)
-                    task.wait(0.1)
-                end
-            end)
-        end
-    end)()
-})
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local LocalPlayer = Players.LocalPlayer
@@ -361,7 +363,7 @@ RunService.RenderStepped:Connect(function(dt)
     
     -- 每 3 秒刷新一次玩家列表
     RefreshTimer = RefreshTimer + dt
-    if RefreshTimer >= 3 then
+    if RefreshTimer >= 0.2 then
         RefreshTimer = 0
         
         -- 清理已经不在服里或没有角色的玩家的视觉框
@@ -460,7 +462,7 @@ RunService.RenderStepped:Connect(function(dt)
     
     -- 每 3 秒刷新一次玩家列表
     RefreshTimer = RefreshTimer + dt
-    if RefreshTimer >= 3 then
+    if RefreshTimer >= 0.2 then
         RefreshTimer = 0
         
         -- 清理已经不在服里或没有角色的玩家的视觉框
