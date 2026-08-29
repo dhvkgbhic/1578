@@ -16,31 +16,23 @@ local Tab = Window:MakeTab({
 local MusicSound = nil
 local CurrentSoundId = "rbxassetid://0" 
 local CurrentVolume = 50
-
---【第一波新增变量】
 local LoopEnabled = true
 local LastVolume = CurrentVolume
-
---【第二次新增变量】
 local PlaySpeed = 1
 local AutoRandomEnabled = false
 local AutoRandomDelay = 30
 local AutoRandomTask = nil
 local CurrentPlaylistIndex = 1
-
---【第三次新增变量】
 local AutoNextOnEnd = false
 local FadeTime = 0.5
-
---【第四波新增变量（睡眠定时）】
 local SleepTask = nil
 local SleepDuration = 60
 
---【本次新增歌词变量】
+-- 歌词相关变量
 local LyricsEnabled = false
 local LyricsTable = {}
 local LyricsIsTimestamped = false
-local LyricsInterval = 5 -- 无时间戳时每行显示的秒数
+local LyricsInterval = 5
 local LyricsTask = nil
 local CurrentLyricIndex = 0
 
@@ -48,7 +40,7 @@ local CurrentLyricIndex = 0
 local LyricsGui = Instance.new("ScreenGui")
 LyricsGui.Name = "LyricsGui"
 LyricsGui.ResetOnSpawn = false
-LyricsGui.Parent = game:GetService("CoreGui") -- 放CoreGui里不易被清
+LyricsGui.Parent = game:GetService("CoreGui")
 LyricsGui.IgnoreGuiInset = true
 
 local LyricsLabel = Instance.new("TextLabel")
@@ -77,7 +69,6 @@ local MusicList = {
     "1334940365"
 }
 
---【关键修改】音乐ID选择下拉菜单
 local Dropdown = Tab:AddDropdown({
     Name = "选择音乐ID",
     Default = "1845918434",
@@ -111,9 +102,7 @@ Tab:AddTextbox({
     end
 })
 
--- ==========================================
--- 音量控制设置
--- ==========================================
+-- 音量设置
 Tab:AddTextbox({
     Name = "音量控制设置 (0-100)",
     Default = "50",
@@ -128,7 +117,6 @@ Tab:AddTextbox({
     end
 })
 
---【音量微调】
 Tab:AddButton({
     Name = "🔊音量+5",
     Callback = function()
@@ -146,7 +134,7 @@ Tab:AddButton({
     end
 })
 
---====================【第一波新增功能】====================
+-- 基础控制
 Tab:AddToggle({
     Name = "循环播放",
     Default = true,
@@ -209,7 +197,7 @@ Tab:AddButton({
     end
 })
 
---====================【第二次新增全部功能】====================
+-- 倍速与切歌
 Tab:AddTextbox({
     Name = "⏩播放速度(0.5‑2)",
     Default = "1",
@@ -246,14 +234,16 @@ Tab:AddButton({
         OrionLib:MakeNotification({Name="下一首",Content="ID:"..selId,Time=2})
     end
 })
+
+-- 歌单管理（修复重点：强制只提取纯数字，防止UI卡死）
 Tab:AddTextbox({
     Name = "➕添加ID到歌单",
     Default = "输入数字ID",
     TextDisappear = true,
     Callback = function(val)
-        local id = string.gsub(val,"%s","")
-        if #id <3 then return end
-        table.insert(MusicList,id)
+        local id = string.gsub(val, "%D", "") -- 只提取纯数字
+        if #id < 3 then return end
+        table.insert(MusicList, id)
         pcall(function() Dropdown:Refresh() end)
         OrionLib:MakeNotification({Name="添加成功",Content="已加入歌单 ID:"..id,Time=2})
     end
@@ -263,7 +253,7 @@ Tab:AddTextbox({
     Default = "输入要删除的ID",
     TextDisappear = true,
     Callback = function(val)
-        local id = string.gsub(val,"%s","")
+        local id = string.gsub(val, "%D", "")
         for i, v in ipairs(MusicList) do
             if v == id then
                 table.remove(MusicList, i)
@@ -284,6 +274,8 @@ Tab:AddButton({
         OrionLib:MakeNotification({Name="已重置歌单",Content="恢复原始预置列表",Time=3})
     end
 })
+
+-- 自动切歌
 Tab:AddTextbox({
     Name = "🔁自动切歌间隔(秒)",
     Default = "30",
@@ -323,7 +315,7 @@ Tab:AddButton({
     end
 })
 
---====================【第三次新增功能】====================
+-- 淡入淡出与自动下一首
 Tab:AddToggle({
     Name = "✨歌曲结束自动下一首",
     Default = false,
@@ -369,27 +361,24 @@ Tab:AddButton({
     end
 })
 
---====================【本次新增：歌词显示功能】====================
--- 导入歌词
+-- 歌词功能
 Tab:AddTextbox({
     Name = "📝导入歌词(支持[分:秒]格式)",
     Default = "每行一句歌词，或[00:10]歌词格式",
-    TextDisappear = false, -- 不消失，方便歌词较长时编辑
+    TextDisappear = false,
     Callback = function(text)
         LyricsTable = {}
         LyricsIsTimestamped = false
         for line in string.gmatch(text, "[^\r\n]+") do
             table.insert(LyricsTable, line)
             if string.match(line, "%[(%d+):(%d+)%]") then
-                LyricsIsTimestamped = true -- 只要检测到第一行有时间戳，就开启精准模式
+                LyricsIsTimestamped = true
             end
         end
         CurrentLyricIndex = 0
         OrionLib:MakeNotification({Name="歌词导入成功",Content="共导入 "..#LyricsTable.." 行歌词",Time=3})
     end
 })
-
--- 无时间戳时的换行间隔
 Tab:AddTextbox({
     Name = "⏳无时间戳歌词间隔(秒)",
     Default = "5",
@@ -399,8 +388,6 @@ Tab:AddTextbox({
         if t and t > 0.5 then LyricsInterval = t end
     end
 })
-
--- 歌词显示开关
 Tab:AddToggle({
     Name = "🎤显示歌词",
     Default = false,
@@ -408,7 +395,6 @@ Tab:AddToggle({
         LyricsEnabled = state
         LyricsLabel.Visible = LyricsEnabled
         if state and MusicSound then
-            -- 开启歌词同步任务
             if LyricsTask then task.cancel(LyricsTask) end
             LyricsTask = task.spawn(function()
                 while LyricsEnabled do
@@ -418,10 +404,8 @@ Tab:AddToggle({
                         LyricsLabel.Text = "无歌词"
                         continue
                     end
-                    
                     local currentTime = MusicSound.TimePosition
                     if LyricsIsTimestamped then
-                        -- 精准匹配模式
                         for i, line in ipairs(LyricsTable) do
                             local mm, ss, text = string.match(line, "%[(%d+):(%d+)%](.+)")
                             if mm and ss and text then
@@ -432,10 +416,8 @@ Tab:AddToggle({
                             end
                         end
                     else
-                        -- 简单按时间间隔切换歌词
                         local currentLine = math.floor(currentTime / LyricsInterval) + 1
-                        if currentLine > #LyricsTable then 
-                            LyricsLabel.Text = "---"
+                        if currentLine > #LyricsTable then LyricsLabel.Text = "---"
                         elseif currentLine ~= CurrentLyricIndex then
                             CurrentLyricIndex = currentLine
                             LyricsLabel.Text = LyricsTable[currentLine]
@@ -450,7 +432,7 @@ Tab:AddToggle({
     end
 })
 
---====================【睡眠定时等其他功能】====================
+-- 定时与停止
 Tab:AddTextbox({
     Name = "⏰设置睡眠定时(秒)",
     Default = "60",
@@ -473,31 +455,6 @@ Tab:AddButton({
     end
 })
 Tab:AddButton({
-    Name = "↩️重置歌曲到开头",
-    Callback = function()
-        if MusicSound then pcall(function() MusicSound.TimePosition = 0 end) end
-    end
-})
-Tab:AddButton({
-    Name = "📤导出歌单(复制全部ID)",
-    Callback = function()
-        local str = table.concat(MusicList,"\n")
-        pcall(function() game:GetService("GuiService"):SetClipboard(str) end)
-    end
-})
-Tab:AddTextbox({
-    Name = "📥导入歌单(换行分隔ID)",
-    Default = "粘贴多行ID",
-    TextDisappear = true,
-    Callback = function(text)
-        for id in string.gmatch(text,"[^\r\n]+") do
-            id = string.gsub(id,"%s","")
-            if #id>2 then table.insert(MusicList,id) end
-        end
-        pcall(function() Dropdown:Refresh() end)
-    end
-})
-Tab:AddButton({
     Name = "🛑全部停止&关闭自动切歌",
     Callback = function()
         AutoRandomEnabled = false
@@ -509,7 +466,9 @@ Tab:AddButton({
     end
 })
 
---====================【基础播放控件】====================
+--【修复重点：之前这行多出来的Tab:AddToggle代码已经删掉】
+
+-- 基础播放控件
 Tab:AddButton({
     Name = "开始播放音乐",
     Callback = function()
@@ -540,12 +499,9 @@ Tab:AddButton({
         MusicSound.SoundId = CurrentSoundId
         pcall(function() MusicSound:Play() end)
         
-        -- 如果歌词开关是打开的，重新连接歌词同步
+        -- 开启歌词同步（修复了之前可能卡死UI的Toggle代码）
         if LyricsEnabled and not LyricsTask then
             LyricsLabel.Visible = true
-            -- 触发一次同步
-            Tab:AddToggle({ Name = "显示歌词", Default = true, Callback = function() end }) 
-            -- 重新运行歌词同步循环
             LyricsTask = task.spawn(function()
                 while LyricsEnabled do
                     task.wait(0.1)
