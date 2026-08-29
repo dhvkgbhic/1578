@@ -1,0 +1,113 @@
+-- 加载你提供的UI库
+local OrionLib = loadstring(game:HttpGet("https://raw.githubusercontent.com/dhvkgbhic/1578/refs/heads/main/ui"))()
+
+local Window = OrionLib:MakeWindow({
+    Name = "音乐播放器",
+    HidePremium = false,
+    SaveConfig = true,
+    ConfigFolder = "MusicIDPlayer"
+})
+
+local Tab = Window:MakeTab({
+    Name = "音乐",
+    Icon = "rbxassetid://18270615016",
+    PremiumOnly = false
+})
+
+-- 核心变量
+local MusicSound = nil
+local CurrentSoundId = "rbxassetid://0" -- 默认占位符
+local CurrentVolume = 5 -- 默认音量：5 (对应0.5)
+
+-- 搜索框：输入音频ID
+Tab:AddTextbox({
+    Name = "输入音频ID",
+    Default = "例如: 1845918434",
+    TextDisappear = true,
+    Callback = function(Value)
+        -- 自动加上rbxassetid://前缀
+        CurrentSoundId = "rbxassetid://" .. Value
+        OrionLib:MakeNotification({
+            Name = "成功",
+            Content = "已设置音频ID: " .. Value,
+            Time = 3
+        })
+    end
+})
+
+-- 音量控制滑条 (新增功能)
+Tab:AddSlider({
+    Name = "音量控制",
+    MinValue = 0,
+    MaxValue = 10,
+    Default = CurrentVolume,
+    Color = Color3.fromRGB(255, 0, 0), -- 滑条颜色，可改为(0,255,0)绿色等
+    Increment = 1, -- 每次拖动增加1
+    Callback = function(Value)
+        CurrentVolume = Value
+        if MusicSound then
+            -- Roblox音量范围是0-1，所以除以10
+            MusicSound.Volume = Value / 10
+        end
+    end
+})
+
+-- 开始播放按钮
+Tab:AddButton({
+    Name = "开始播放音乐",
+    Callback = function()
+        if CurrentSoundId == "rbxassetid://0" then
+            OrionLib:MakeNotification({
+                Name = "错误",
+                Content = "请先在上方输入有效的音频ID！",
+                Time = 3
+            })
+            return
+        end
+        
+        if not MusicSound then
+            MusicSound = Instance.new("Sound")
+            MusicSound.Name = "PlayerMusic"
+            MusicSound.Parent = game:GetService("SoundService") -- 挂在SoundService下，死亡不中断
+            MusicSound.Looped = true -- 循环播放
+            MusicSound.Volume = CurrentVolume / 10 -- 应用当前设置的音量
+        end
+        
+        MusicSound.SoundId = CurrentSoundId
+        MusicSound:Play()
+    end
+})
+
+-- 重新播放按钮
+Tab:AddButton({
+    Name = "重新播放音乐",
+    Callback = function()
+        if MusicSound then
+            MusicSound:Stop()
+            MusicSound:Play()
+        end
+    end
+})
+
+-- 停止播放按钮
+Tab:AddButton({
+    Name = "停止播放音乐",
+    Callback = function()
+        if MusicSound then
+            MusicSound:Stop()
+        end
+    end
+})
+
+-- 继续播放按钮
+Tab:AddButton({
+    Name = "继续播放音乐",
+    Callback = function()
+        if MusicSound then
+            MusicSound:Resume()
+        end
+    end
+})
+
+-- 初始化UI
+OrionLib:Init()
