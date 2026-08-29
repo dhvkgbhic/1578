@@ -39,15 +39,14 @@ local LyricsGui = Instance.new("ScreenGui")
 LyricsGui.Name = "LyricsGui"
 LyricsGui.ResetOnSpawn = false
 LyricsGui.Parent = game:GetService("CoreGui")
-LyricsGui.IgnoreGuiInset = true
 local LyricsLabel = Instance.new("TextLabel")
 LyricsLabel.Parent = LyricsGui
 LyricsLabel.AnchorPoint = Vector2.new(0.5, 1)
 LyricsLabel.Position = UDim2.new(0.5, 0, 0.9, 0)
 LyricsLabel.Size = UDim2.new(0.8, 0, 0.2, 0)
 LyricsLabel.BackgroundTransparency = 0.8
+LyricsLabel.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
 LyricsLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-LyricsLabel.TextStrokeTransparency = 0.5
 LyricsLabel.TextSize = 24
 LyricsLabel.Font = Enum.Font.GothamBold
 LyricsLabel.Text = "等待歌词中..."
@@ -64,27 +63,32 @@ local MusicList = {
     "1334940365"
 }
 
--- 下拉菜单（初始化时绑定）
-local Dropdown = Tab:AddDropdown({
-    Name = "选择音乐ID",
-    Default = "1845918434",
-    Options = MusicList,
-    Callback = function(Value)
-        CurrentSoundId = "rbxassetid://" .. Value
-        for i,v in ipairs(MusicList) do
-            if v == Value then CurrentPlaylistIndex = i end
-        end
-        OrionLib:MakeNotification({Name="已选择",Content="当前选中ID: "..Value,Time=3})
-    end
-})
+-- ==========================================
+-- 【彻底修复】不再使用会崩溃的Dropdown
+-- 直接使用文本框来选择ID
+-- ==========================================
 
--- 手动输入音频ID（下拉框卡死时的完全备用方案）
+-- 实时显示当前选中的ID
+local CurrentIdLabel = Tab:AddLabel("当前选中ID: 1845918434")
+
+-- 手动输入音频ID（核心选择方式，绝不崩溃）
 Tab:AddTextbox({
-    Name = "手动输入音频ID",
-    Default = "直接输入数字ID",
+    Name = "选择或手动输入音频ID",
+    Default = "1845918434",
     TextDisappear = true,
     Callback = function(Value)
-        CurrentSoundId = "rbxassetid://" .. Value
+        local pureId = string.gsub(Value, "%D", "")
+        if pureId == "" or #pureId < 3 then return end
+        CurrentSoundId = "rbxassetid://" .. pureId
+        
+        -- 更新当前显示
+        CurrentIdLabel:Set("当前选中ID: " .. pureId)
+        
+        -- 实时响应：如果有播放直接切歌
+        if MusicSound then
+            MusicSound.SoundId = CurrentSoundId
+            pcall(function() MusicSound:Play() end)
+        end
     end
 })
 
@@ -127,6 +131,7 @@ Tab:AddButton({ Name = "🎲随机播放预置音乐", Callback = function()
     local SelectID = MusicList[RandIndex]
     CurrentPlaylistIndex = RandIndex
     CurrentSoundId = "rbxassetid://"..SelectID
+    CurrentIdLabel:Set("当前选中ID: " .. SelectID)
     if MusicSound then MusicSound.SoundId = CurrentSoundId; pcall(function() MusicSound:Play() end) end
 end})
 Tab:AddButton({ Name = "🔇静音 / 恢复音量", Callback = function()
@@ -169,6 +174,7 @@ Tab:AddButton({ Name = "⏮上一首", Callback = function()
     if CurrentPlaylistIndex <1 then CurrentPlaylistIndex = #MusicList end
     local selId = MusicList[CurrentPlaylistIndex]
     CurrentSoundId = "rbxassetid://"..selId
+    CurrentIdLabel:Set("当前选中ID: " .. selId)
     if MusicSound then MusicSound.SoundId = CurrentSoundId; pcall(function() MusicSound:Play() end) end
 end})
 Tab:AddButton({ Name = "⏭下一首", Callback = function()
@@ -176,16 +182,21 @@ Tab:AddButton({ Name = "⏭下一首", Callback = function()
     if CurrentPlaylistIndex > #MusicList then CurrentPlaylistIndex =1 end
     local selId = MusicList[CurrentPlaylistIndex]
     CurrentSoundId = "rbxassetid://"..selId
+    CurrentIdLabel:Set("当前选中ID: " .. selId)
     if MusicSound then MusicSound.SoundId = CurrentSoundId; pcall(function() MusicSound:Play() end) end
 end})
 
--- =====【彻底修复：歌单管理不再自动刷新，改为安全的手动刷新】=====
+-- ==========================================
+-- 歌单管理（不包含任何会崩溃的刷新代码）
+-- ==========================================
 Tab:AddTextbox({ Name = "➕添加ID到歌单", Default = "输入数字ID", TextDisappear = true, Callback = function(val)
     local id = string.gsub(val, "%D", "")
     if id == "" or #id < 3 then return end
-    -- 只添加数据，绝不自动刷新下拉框，防止UI卡死
     table.insert(MusicList, id)
-    OrionLib:MakeNotification({Name="已添加",Content="ID: "..id.." 已入列，请点击下方刷新按钮更新下拉菜单",Time=3})
+    -- 自动将新ID设为当前播放（免去手动查找的烦恼）
+    CurrentSoundId = "rbxassetid://"..id
+    CurrentIdLabel:Set("当前选中ID: " .. id)
+    OrionLib:MakeNotification({Name="已添加并选中",Content="已加入： "..id,Time=3})
 end})
 
 Tab:AddTextbox({ Name = "❌删除歌单里指定ID", Default = "输入要删除的ID", TextDisappear = true, Callback = function(val)
@@ -194,7 +205,7 @@ Tab:AddTextbox({ Name = "❌删除歌单里指定ID", Default = "输入要删除
     for i, v in ipairs(MusicList) do
         if v == id then
             table.remove(MusicList, i)
-            OrionLib:MakeNotification({Name="已删除",Content="ID: "..id.." 已移除，请点击下方刷新按钮更新下拉菜单",Time=3})
+            OrionLib:MakeNotification({Name="已删除",Content="已移除ID: "..id,Time=3})
             return
         end
     end
@@ -203,22 +214,14 @@ end})
 Tab:AddButton({ Name = "🧹清空自定义歌单", Callback = function()
     MusicList = {"1845918434", "1843463175", "1837844742", "1843497734", "1840172845", "1334940365"}
     CurrentPlaylistIndex = 1
-    OrionLib:MakeNotification({Name="已重置",Content="歌单已恢复原始预置列表，请点击下方刷新按钮更新",Time=3})
+    OrionLib:MakeNotification({Name="已重置",Content="恢复原始预置列表",Time=3})
 end})
 
--- =====【新增：手动安全刷新按钮，专门用来修复点击下拉菜单卡死问题】=====
-Tab:AddButton({ Name = "🔄 刷新下拉菜单(修复卡死)", Callback = function()
-    -- 延迟0.2秒，等UI彻底冷却后再刷新，防止瞬间操作导致崩溃
-    task.spawn(function()
-        task.wait(0.2)
-        pcall(function()
-            Dropdown:Refresh()
-        end)
-    end)
-    OrionLib:MakeNotification({Name="正在刷新",Content="请稍候，下拉菜单即将恢复可用",Time=2})
+Tab:AddButton({ Name = "📤导出歌单(复制全部ID)", Callback = function()
+    local str = table.concat(MusicList,"\n")
+    pcall(function() game:GetService("GuiService"):SetClipboard(str) end)
 end})
 
--- 导入歌单 (同样不自动刷新，等待用户手动点击刷新)
 Tab:AddTextbox({ Name = "📥导入歌单(换行分隔ID)", Default = "粘贴多行ID", TextDisappear = true, Callback = function(text)
     for id in string.gmatch(text, "[^\r\n]+") do
         id = string.gsub(id, "%D", "")
@@ -226,7 +229,18 @@ Tab:AddTextbox({ Name = "📥导入歌单(换行分隔ID)", Default = "粘贴多
             table.insert(MusicList, id)
         end
     end
-    OrionLib:MakeNotification({Name="导入完成",Content="已批量添加，请点击下方刷新按钮更新",Time=3})
+    -- 导入后自动选中最后一个添加的ID
+    if #MusicList > 0 then
+        local lastId = MusicList[#MusicList]
+        CurrentSoundId = "rbxassetid://"..lastId
+        CurrentIdLabel:Set("当前选中ID: " .. lastId)
+    end
+    OrionLib:MakeNotification({Name="导入完成",Content="已批量添加ID进歌单",Time=3})
+end})
+
+Tab:AddButton({ Name = "🧾显示全部歌单", Callback = function()
+    local output = table.concat(MusicList," | ")
+    OrionLib:MakeNotification({Name="完整歌单",Content = #output>180 and output:sub(1,180).."..." or output,Time=4})
 end})
 
 -- 自动切歌
@@ -245,6 +259,7 @@ Tab:AddToggle({ Name = "🔁开启自动随机切歌", Default = false, Callback
                 CurrentPlaylistIndex = randI
                 local sid = MusicList[randI]
                 CurrentSoundId = "rbxassetid://"..sid
+                CurrentIdLabel:Set("当前选中ID: " .. sid)
                 if MusicSound then pcall(function() MusicSound.SoundId = CurrentSoundId; MusicSound:Play() end) end
             end
         end)
@@ -355,7 +370,10 @@ end})
 
 -- 基础播放控件
 Tab:AddButton({ Name = "开始播放音乐", Callback = function()
-    if CurrentSoundId == "rbxassetid://0" then return end
+    if CurrentSoundId == "rbxassetid://0" then
+        OrionLib:MakeNotification({Name="提示",Content="请在输入框内输入有效ID",Time=3})
+        return
+    end
     if not MusicSound then
         MusicSound = Instance.new("Sound")
         MusicSound.Name = "PlayerMusic"
