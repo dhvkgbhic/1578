@@ -715,7 +715,7 @@ Tab:AddToggle({
                                 myChar.HumanoidRootPart.CFrame = targetPlr.Character.HumanoidRootPart.CFrame + Vector3.new(0,3,0)
                             end
                         end)
-                        task.wait(1) --间隔1秒传送到下一位玩家
+                        task.wait(0.3) --间隔1秒传送到下一位玩家
                     end
                 end
             end)
