@@ -158,30 +158,48 @@ Tab:AddToggle({
 })
 
 local hitboxLoop = nil
-local originalParts = {} --保存原始尺寸，关闭开关恢复
+local visualBox = nil
 
 Tab:AddToggle({
-    Name = "Hitbox范围",
+    Name = "扩大Hitbox",
     Default = false,
     Callback = function(Value)
         if Value then
             hitboxLoop = task.spawn(function()
                 local LocalPlayer = game:GetService("Players").LocalPlayer
+                local hitboxSize = 6 -- 修改这个调整方框大小
+                local model = Instance.new("Model")
+                model.Name = "AttackHitboxVisual"
+                local half = hitboxSize / 2
+                local faces = {
+                    {sz = Vector3.new(hitboxSize, hitboxSize, 0.1), pos = Vector3.new(0,0,half)},
+                    {sz = Vector3.new(hitboxSize, hitboxSize, 0.1), pos = Vector3.new(0,0,-half)},
+                    {sz = Vector3.new(hitboxSize, 0.1, hitboxSize), pos = Vector3.new(0,half,0)},
+                    {sz = Vector3.new(hitboxSize, 0.1, hitboxSize), pos = Vector3.new(0,-half,0)},
+                    {sz = Vector3.new(0.1, hitboxSize, hitboxSize), pos = Vector3.new(half,0,0)},
+                    {sz = Vector3.new(0.1, hitboxSize, hitboxSize), pos = Vector3.new(-half,0,0)},
+                }
+                for _,data in ipairs(faces) do
+                    local p = Instance.new("Part")
+                    p.Anchored = true
+                    p.CanCollide = false
+                    p.Transparency = 0.76
+                    p.BrickColor = BrickColor.Red()
+                    p.Material = Enum.Material.SmoothPlastic
+                    p.Size = data.sz
+                    p.CFrame = CFrame.new(data.pos)
+                    p.Parent = model
+                end
+                visualBox = model
+                visualBox.Parent = workspace
+
                 while true do
-                    task.wait(0.2)
+                    task.wait(0.1)
                     local char = LocalPlayer.Character
                     if not char then continue end
-                    
-                    --遍历角色所有物理部件
-                    for _,part in ipairs(char:GetChildren()) do
-                        if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" then
-                            if not originalParts[part] then
-                                originalParts[part] = part.Size --记录原始大小
-                            end
-                            --放大倍数，2.2 = 2.2倍hitbox，自行调大/调小
-                            part.Size = originalParts[part] * 2.9
-                        end
-                    end
+                    local root = char:FindFirstChild("HumanoidRootPart")
+                    if not root then continue end
+                    visualBox:SetPrimaryPartCFrame(CFrame.new(root.Position))
                 end
             end)
         else
@@ -189,17 +207,13 @@ Tab:AddToggle({
                 task.cancel(hitboxLoop)
                 hitboxLoop = nil
             end
-            --恢复原本大小
-            for part,oriSize in pairs(originalParts) do
-                pcall(function()
-                    part.Size = oriSize
-                end)
+            if visualBox then
+                pcall(function() visualBox:Destroy() end)
+                visualBox = nil
             end
-            table.clear(originalParts)
         end
     end
 })
-
 Tab:AddToggle({
     Name = "穿墙",
     Default = false,
