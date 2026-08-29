@@ -27,8 +27,6 @@ local AutoNextOnEnd = false
 local FadeTime = 0.5
 local SleepTask = nil
 local SleepDuration = 60
-
--- 歌词相关变量
 local LyricsEnabled = false
 local LyricsTable = {}
 local LyricsIsTimestamped = false
@@ -36,21 +34,18 @@ local LyricsInterval = 5
 local LyricsTask = nil
 local CurrentLyricIndex = 0
 
--- 创建歌词显示界面
+-- 歌词界面
 local LyricsGui = Instance.new("ScreenGui")
 LyricsGui.Name = "LyricsGui"
 LyricsGui.ResetOnSpawn = false
 LyricsGui.Parent = game:GetService("CoreGui")
 LyricsGui.IgnoreGuiInset = true
-
 local LyricsLabel = Instance.new("TextLabel")
-LyricsLabel.Name = "LyricsLabel"
 LyricsLabel.Parent = LyricsGui
 LyricsLabel.AnchorPoint = Vector2.new(0.5, 1)
 LyricsLabel.Position = UDim2.new(0.5, 0, 0.9, 0)
 LyricsLabel.Size = UDim2.new(0.8, 0, 0.2, 0)
 LyricsLabel.BackgroundTransparency = 0.8
-LyricsLabel.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
 LyricsLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
 LyricsLabel.TextStrokeTransparency = 0.5
 LyricsLabel.TextSize = 24
@@ -69,6 +64,7 @@ local MusicList = {
     "1334940365"
 }
 
+-- 下拉菜单（初始化时绑定）
 local Dropdown = Tab:AddDropdown({
     Name = "选择音乐ID",
     Default = "1845918434",
@@ -82,6 +78,16 @@ local Dropdown = Tab:AddDropdown({
     end
 })
 
+-- 手动输入音频ID（下拉框卡死时的完全备用方案）
+Tab:AddTextbox({
+    Name = "手动输入音频ID",
+    Default = "直接输入数字ID",
+    TextDisappear = true,
+    Callback = function(Value)
+        CurrentSoundId = "rbxassetid://" .. Value
+    end
+})
+
 -- 复制选中的ID
 Tab:AddButton({
     Name = "复制选中的音乐ID",
@@ -92,456 +98,278 @@ Tab:AddButton({
     end
 })
 
--- 手动输入音频ID
-Tab:AddTextbox({
-    Name = "手动输入音频ID",
-    Default = "例如: 1845918434",
-    TextDisappear = true,
-    Callback = function(Value)
-        CurrentSoundId = "rbxassetid://" .. Value
-    end
-})
-
--- 音量设置
-Tab:AddTextbox({
-    Name = "音量控制设置 (0-100)",
-    Default = "50",
-    TextDisappear = true,
-    Callback = function(Value)
-        local vol = tonumber(Value)
-        if not vol then vol = 50 end
-        if vol > 100 then vol = 100 end
-        if vol < 0 then vol = 0 end
-        CurrentVolume = vol
-        if MusicSound then pcall(function() MusicSound.Volume = CurrentVolume / 100 end) end
-    end
-})
-
-Tab:AddButton({
-    Name = "🔊音量+5",
-    Callback = function()
-        CurrentVolume = math.min(100, CurrentVolume + 5)
-        if MusicSound then pcall(function() MusicSound.Volume = CurrentVolume / 100 end) end
-        OrionLib:MakeNotification({Name="音量+",Content="当前音量: "..CurrentVolume,Time=1})
-    end
-})
-Tab:AddButton({
-    Name = "🔉音量-5",
-    Callback = function()
-        CurrentVolume = math.max(0, CurrentVolume - 5)
-        if MusicSound then pcall(function() MusicSound.Volume = CurrentVolume / 100 end) end
-        OrionLib:MakeNotification({Name="音量-",Content="当前音量: "..CurrentVolume,Time=1})
-    end
-})
+-- 音量控制
+Tab:AddTextbox({ Name = "音量控制设置 (0-100)", Default = "50", TextDisappear = true, Callback = function(Value)
+    local vol = tonumber(Value) or 50
+    if vol > 100 then vol = 100 end
+    if vol < 0 then vol = 0 end
+    CurrentVolume = vol
+    if MusicSound then pcall(function() MusicSound.Volume = CurrentVolume / 100 end) end
+end})
+Tab:AddButton({ Name = "🔊音量+5", Callback = function()
+    CurrentVolume = math.min(100, CurrentVolume + 5)
+    if MusicSound then pcall(function() MusicSound.Volume = CurrentVolume / 100 end) end
+    OrionLib:MakeNotification({Name="音量+",Content="当前音量: "..CurrentVolume,Time=1})
+end})
+Tab:AddButton({ Name = "🔉音量-5", Callback = function()
+    CurrentVolume = math.max(0, CurrentVolume - 5)
+    if MusicSound then pcall(function() MusicSound.Volume = CurrentVolume / 100 end) end
+    OrionLib:MakeNotification({Name="音量-",Content="当前音量: "..CurrentVolume,Time=1})
+end})
 
 -- 基础控制
-Tab:AddToggle({
-    Name = "循环播放",
-    Default = true,
-    Callback = function(State)
-        LoopEnabled = State
-        if MusicSound then pcall(function() MusicSound.Looped = LoopEnabled end) end
-    end
-})
-Tab:AddButton({
-    Name = "🎲随机播放预置音乐",
-    Callback = function()
-        local RandIndex = math.random(1,#MusicList)
-        local SelectID = MusicList[RandIndex]
-        CurrentPlaylistIndex = RandIndex
-        CurrentSoundId = "rbxassetid://"..SelectID
-        OrionLib:MakeNotification({Name="随机切歌",Content="选中ID："..SelectID,Time=3})
-        if MusicSound then MusicSound.SoundId = CurrentSoundId; pcall(function() MusicSound:Play() end) end
-    end
-})
-Tab:AddButton({
-    Name = "🔇静音 / 恢复音量",
-    Callback = function()
-        if not MusicSound then return end
-        if CurrentVolume ~= 0 then LastVolume = CurrentVolume; CurrentVolume = 0
-        else CurrentVolume = LastVolume end
-        pcall(function() MusicSound.Volume = CurrentVolume / 100 end)
-        OrionLib:MakeNotification({Name = CurrentVolume == 0 and "✅已静音" or "✅音量恢复", Content = "当前音量："..CurrentVolume, Time = 2})
-    end
-})
-Tab:AddTextbox({
-    Name = "⏱跳转播放位置(秒)",
-    Default = "0",
-    TextDisappear = true,
-    Callback = function(Val)
-        local JumpSec = tonumber(Val)
-        if not JumpSec or not MusicSound then return end
-        pcall(function() MusicSound.TimePosition = JumpSec end)
-        OrionLib:MakeNotification({Name="跳转完成",Content="跳至 "..JumpSec.." 秒",Time=2})
-    end
-})
-Tab:AddButton({
-    Name = "🗑彻底销毁音频对象",
-    Callback = function()
-        if AutoRandomTask then task.cancel(AutoRandomTask) AutoRandomTask = nil end
-        if SleepTask then task.cancel(SleepTask) SleepTask = nil end
-        if LyricsTask then task.cancel(LyricsTask) LyricsTask = nil end
-        AutoRandomEnabled = false
-        if MusicSound then pcall(function() MusicSound:Stop(); MusicSound:Destroy() end); MusicSound = nil end
-        LyricsLabel.Visible = false
-        OrionLib:MakeNotification({Name="操作完成",Content="音频对象已完全删除",Time=3})
-    end
-})
-Tab:AddButton({
-    Name = "ℹ查看当前播放信息",
-    Callback = function()
-        if not MusicSound then OrionLib:MakeNotification({Name="提示",Content="当前没有播放音频",Time=3}); return end
-        local PureId = string.gsub(CurrentSoundId,"rbxassetid://","")
-        local InfoText = string.format("ID:%s |音量:%d |循环:%s |速度:%.1f",PureId,CurrentVolume,tostring(LoopEnabled),PlaySpeed)
-        OrionLib:MakeNotification({Name="播放信息",Content=InfoText,Time=4})
-    end
-})
+Tab:AddToggle({ Name = "循环播放", Default = true, Callback = function(State)
+    LoopEnabled = State
+    if MusicSound then pcall(function() MusicSound.Looped = LoopEnabled end) end
+end})
+Tab:AddButton({ Name = "🎲随机播放预置音乐", Callback = function()
+    local RandIndex = math.random(1,#MusicList)
+    local SelectID = MusicList[RandIndex]
+    CurrentPlaylistIndex = RandIndex
+    CurrentSoundId = "rbxassetid://"..SelectID
+    if MusicSound then MusicSound.SoundId = CurrentSoundId; pcall(function() MusicSound:Play() end) end
+end})
+Tab:AddButton({ Name = "🔇静音 / 恢复音量", Callback = function()
+    if not MusicSound then return end
+    if CurrentVolume ~= 0 then LastVolume = CurrentVolume; CurrentVolume = 0
+    else CurrentVolume = LastVolume end
+    pcall(function() MusicSound.Volume = CurrentVolume / 100 end)
+end})
+Tab:AddTextbox({ Name = "⏱跳转播放位置(秒)", Default = "0", TextDisappear = true, Callback = function(Val)
+    local JumpSec = tonumber(Val)
+    if not JumpSec or not MusicSound then return end
+    pcall(function() MusicSound.TimePosition = JumpSec end)
+end})
 
--- 倍速与切歌
-Tab:AddTextbox({
-    Name = "⏩播放速度(0.5‑2)",
-    Default = "1",
-    TextDisappear = true,
-    Callback = function(val)
-        local speed = tonumber(val)
-        if not speed then speed = 1 end
-        if speed <0.5 then speed=0.5 end
-        if speed>2 then speed=2 end
-        PlaySpeed = speed
-        if MusicSound then pcall(function() MusicSound.PlaybackSpeed = PlaySpeed end) end
-        OrionLib:MakeNotification({Name="速度设置",Content="当前倍速: "..PlaySpeed,Time=2})
-    end
-})
-Tab:AddButton({
-    Name = "⏮上一首",
-    Callback = function()
-        CurrentPlaylistIndex -=1
-        if CurrentPlaylistIndex <1 then CurrentPlaylistIndex = #MusicList end
-        local selId = MusicList[CurrentPlaylistIndex]
-        CurrentSoundId = "rbxassetid://"..selId
-        if MusicSound then MusicSound.SoundId = CurrentSoundId; pcall(function() MusicSound:Play() end) end
-        OrionLib:MakeNotification({Name="上一首",Content="ID:"..selId,Time=2})
-    end
-})
-Tab:AddButton({
-    Name = "⏭下一首",
-    Callback = function()
-        CurrentPlaylistIndex +=1
-        if CurrentPlaylistIndex > #MusicList then CurrentPlaylistIndex =1 end
-        local selId = MusicList[CurrentPlaylistIndex]
-        CurrentSoundId = "rbxassetid://"..selId
-        if MusicSound then MusicSound.SoundId = CurrentSoundId; pcall(function() MusicSound:Play() end) end
-        OrionLib:MakeNotification({Name="下一首",Content="ID:"..selId,Time=2})
-    end
-})
+-- 彻底销毁音频
+Tab:AddButton({ Name = "🗑彻底销毁音频对象", Callback = function()
+    if AutoRandomTask then task.cancel(AutoRandomTask) AutoRandomTask = nil end
+    if SleepTask then task.cancel(SleepTask) SleepTask = nil end
+    if LyricsTask then task.cancel(LyricsTask) LyricsTask = nil end
+    AutoRandomEnabled = false
+    if MusicSound then pcall(function() MusicSound:Stop(); MusicSound:Destroy() end); MusicSound = nil end
+    LyricsLabel.Visible = false
+end})
+Tab:AddButton({ Name = "ℹ查看当前播放信息", Callback = function()
+    if not MusicSound then return end
+    local PureId = string.gsub(CurrentSoundId,"rbxassetid://","")
+    OrionLib:MakeNotification({Name="播放信息",Content=string.format("ID:%s |音量:%d |循环:%s |速度:%.1f",PureId,CurrentVolume,tostring(LoopEnabled),PlaySpeed),Time=4})
+end})
 
--- 歌单管理（修复重点：强制只提取纯数字，防止UI卡死）
-Tab:AddTextbox({
-    Name = "➕添加ID到歌单",
-    Default = "输入数字ID",
-    TextDisappear = true,
-    Callback = function(val)
-        local id = string.gsub(val, "%D", "") -- 只提取纯数字
-        if #id < 3 then return end
-        table.insert(MusicList, id)
-        pcall(function() Dropdown:Refresh() end)
-        OrionLib:MakeNotification({Name="添加成功",Content="已加入歌单 ID:"..id,Time=2})
-    end
-})
-Tab:AddTextbox({
-    Name = "❌删除歌单里指定ID",
-    Default = "输入要删除的ID",
-    TextDisappear = true,
-    Callback = function(val)
-        local id = string.gsub(val, "%D", "")
-        for i, v in ipairs(MusicList) do
-            if v == id then
-                table.remove(MusicList, i)
-                pcall(function() Dropdown:Refresh() end)
-                OrionLib:MakeNotification({Name="删除成功",Content="已移除ID: "..id,Time=2})
-                return
-            end
-        end
-        OrionLib:MakeNotification({Name="未找到",Content="歌单中没有这个ID",Time=2})
-    end
-})
-Tab:AddButton({
-    Name = "🧹清空自定义歌单",
-    Callback = function()
-        MusicList = {"1845918434", "1843463175", "1837844742", "1843497734", "1840172845", "1334940365"}
-        CurrentPlaylistIndex = 1
-        pcall(function() Dropdown:Refresh() end)
-        OrionLib:MakeNotification({Name="已重置歌单",Content="恢复原始预置列表",Time=3})
-    end
-})
+-- 播放速度与切歌
+Tab:AddTextbox({ Name = "⏩播放速度(0.5‑2)", Default = "1", TextDisappear = true, Callback = function(val)
+    local speed = tonumber(val) or 1
+    if speed <0.5 then speed=0.5 end
+    if speed>2 then speed=2 end
+    PlaySpeed = speed
+    if MusicSound then pcall(function() MusicSound.PlaybackSpeed = PlaySpeed end) end
+end})
+Tab:AddButton({ Name = "⏮上一首", Callback = function()
+    CurrentPlaylistIndex -=1
+    if CurrentPlaylistIndex <1 then CurrentPlaylistIndex = #MusicList end
+    local selId = MusicList[CurrentPlaylistIndex]
+    CurrentSoundId = "rbxassetid://"..selId
+    if MusicSound then MusicSound.SoundId = CurrentSoundId; pcall(function() MusicSound:Play() end) end
+end})
+Tab:AddButton({ Name = "⏭下一首", Callback = function()
+    CurrentPlaylistIndex +=1
+    if CurrentPlaylistIndex > #MusicList then CurrentPlaylistIndex =1 end
+    local selId = MusicList[CurrentPlaylistIndex]
+    CurrentSoundId = "rbxassetid://"..selId
+    if MusicSound then MusicSound.SoundId = CurrentSoundId; pcall(function() MusicSound:Play() end) end
+end})
 
--- 自动切歌
-Tab:AddTextbox({
-    Name = "🔁自动切歌间隔(秒)",
-    Default = "30",
-    TextDisappear = true,
-    Callback = function(val)
-        local num = tonumber(val)
-        if num and num >=5 then AutoRandomDelay = num end
-    end
-})
-Tab:AddToggle({
-    Name = "🔁开启自动随机切歌",
-    Default = false,
-    Callback = function(state)
-        AutoRandomEnabled = state
-        if state then
-            AutoRandomTask = task.spawn(function()
-                while AutoRandomEnabled do
-                    task.wait(AutoRandomDelay)
-                    if not AutoRandomEnabled then break end
-                    local randI = math.random(1,#MusicList)
-                    CurrentPlaylistIndex = randI
-                    local sid = MusicList[randI]
-                    CurrentSoundId = "rbxassetid://"..sid
-                    if MusicSound then pcall(function() MusicSound.SoundId = CurrentSoundId; MusicSound:Play() end) end
-                end
-            end)
-        else
-            if AutoRandomTask then task.cancel(AutoRandomTask) AutoRandomTask=nil end
-        end
-    end
-})
-Tab:AddButton({
-    Name = "⏳获取歌曲总时长",
-    Callback = function()
-        if not MusicSound then OrionLib:MakeNotification({Name="错误",Content="没有音频对象",Time=2}); return end
-        OrionLib:MakeNotification({Name="歌曲总时长",Content=string.format("%.1f 秒",MusicSound.TimeLength),Time=3})
-    end
-})
+-- =====【彻底修复：歌单管理不再自动刷新，改为安全的手动刷新】=====
+Tab:AddTextbox({ Name = "➕添加ID到歌单", Default = "输入数字ID", TextDisappear = true, Callback = function(val)
+    local id = string.gsub(val, "%D", "")
+    if id == "" or #id < 3 then return end
+    -- 只添加数据，绝不自动刷新下拉框，防止UI卡死
+    table.insert(MusicList, id)
+    OrionLib:MakeNotification({Name="已添加",Content="ID: "..id.." 已入列，请点击下方刷新按钮更新下拉菜单",Time=3})
+end})
 
--- 淡入淡出与自动下一首
-Tab:AddToggle({
-    Name = "✨歌曲结束自动下一首",
-    Default = false,
-    Callback = function(state)
-        AutoNextOnEnd = state
-        if MusicSound and state then
-            pcall(function()
-                MusicSound.Ended:Connect(function()
-                    if AutoNextOnEnd and not LoopEnabled then
-                        CurrentPlaylistIndex +=1
-                        if CurrentPlaylistIndex>#MusicList then CurrentPlaylistIndex=1 end
-                        local selId = MusicList[CurrentPlaylistIndex]
-                        CurrentSoundId = "rbxassetid://"..selId
-                        MusicSound.SoundId = CurrentSoundId
-                        MusicSound:Play()
-                    end
-                end)
-            end)
-        end
-    end
-})
-Tab:AddTextbox({
-    Name = "🌫设置淡入淡出时间(秒)",
-    Default = "0.5",
-    TextDisappear = true,
-    Callback = function(val)
-        local t = tonumber(val)
-        if t and t > 0 then FadeTime = t end
-    end
-})
-Tab:AddButton({
-    Name = "🌫音量淡入淡出切换",
-    Callback = function()
-        if not MusicSound then return end
-        task.spawn(function()
-            local startVol = MusicSound.Volume
-            local target = startVol>0 and 0 or LastVolume/100
-            local steps = 20
-            local delta = (target-startVol)/steps
-            for i=1,steps do task.wait(FadeTime/steps); MusicSound.Volume = startVol + delta*i end
-            CurrentVolume = math.floor(target*100)
-        end)
-    end
-})
-
--- 歌词功能
-Tab:AddTextbox({
-    Name = "📝导入歌词(支持[分:秒]格式)",
-    Default = "每行一句歌词，或[00:10]歌词格式",
-    TextDisappear = false,
-    Callback = function(text)
-        LyricsTable = {}
-        LyricsIsTimestamped = false
-        for line in string.gmatch(text, "[^\r\n]+") do
-            table.insert(LyricsTable, line)
-            if string.match(line, "%[(%d+):(%d+)%]") then
-                LyricsIsTimestamped = true
-            end
-        end
-        CurrentLyricIndex = 0
-        OrionLib:MakeNotification({Name="歌词导入成功",Content="共导入 "..#LyricsTable.." 行歌词",Time=3})
-    end
-})
-Tab:AddTextbox({
-    Name = "⏳无时间戳歌词间隔(秒)",
-    Default = "5",
-    TextDisappear = true,
-    Callback = function(val)
-        local t = tonumber(val)
-        if t and t > 0.5 then LyricsInterval = t end
-    end
-})
-Tab:AddToggle({
-    Name = "🎤显示歌词",
-    Default = false,
-    Callback = function(state)
-        LyricsEnabled = state
-        LyricsLabel.Visible = LyricsEnabled
-        if state and MusicSound then
-            if LyricsTask then task.cancel(LyricsTask) end
-            LyricsTask = task.spawn(function()
-                while LyricsEnabled do
-                    task.wait(0.1)
-                    if not MusicSound or not LyricsEnabled then break end
-                    if #LyricsTable == 0 then
-                        LyricsLabel.Text = "无歌词"
-                        continue
-                    end
-                    local currentTime = MusicSound.TimePosition
-                    if LyricsIsTimestamped then
-                        for i, line in ipairs(LyricsTable) do
-                            local mm, ss, text = string.match(line, "%[(%d+):(%d+)%](.+)")
-                            if mm and ss and text then
-                                local targetTime = (tonumber(mm) * 60) + tonumber(ss)
-                                if currentTime >= targetTime and (i == #LyricsTable or currentTime < (tonumber(string.match(LyricsTable[i+1], "%[(%d+):(%d+)%]")) or 999999) * 1) then
-                                    LyricsLabel.Text = text
-                                end
-                            end
-                        end
-                    else
-                        local currentLine = math.floor(currentTime / LyricsInterval) + 1
-                        if currentLine > #LyricsTable then LyricsLabel.Text = "---"
-                        elseif currentLine ~= CurrentLyricIndex then
-                            CurrentLyricIndex = currentLine
-                            LyricsLabel.Text = LyricsTable[currentLine]
-                        end
-                    end
-                end
-            end)
-        else
-            if LyricsTask then task.cancel(LyricsTask); LyricsTask = nil end
-            LyricsLabel.Text = "歌词已关闭"
-        end
-    end
-})
-
--- 定时与停止
-Tab:AddTextbox({
-    Name = "⏰设置睡眠定时(秒)",
-    Default = "60",
-    TextDisappear = true,
-    Callback = function(val)
-        local t = tonumber(val)
-        if t and t > 0 then SleepDuration = t end
-    end
-})
-Tab:AddButton({
-    Name = "⏰开启睡眠定时",
-    Callback = function()
-        if SleepTask then task.cancel(SleepTask); SleepTask = nil end
-        SleepTask = task.spawn(function()
-            task.wait(SleepDuration)
-            if MusicSound then pcall(function() MusicSound:Pause() end) end
-            OrionLib:MakeNotification({Name="定时结束",Content="音乐已自动暂停",Time=3})
-        end)
-        OrionLib:MakeNotification({Name="定时已启动",Content="将在 "..SleepDuration.." 秒后暂停音乐",Time=2})
-    end
-})
-Tab:AddButton({
-    Name = "🛑全部停止&关闭自动切歌",
-    Callback = function()
-        AutoRandomEnabled = false
-        if AutoRandomTask then task.cancel(AutoRandomTask) AutoRandomTask=nil end
-        if SleepTask then task.cancel(SleepTask) SleepTask=nil end
-        if LyricsTask then task.cancel(LyricsTask) LyricsTask=nil end
-        if MusicSound then pcall(function() MusicSound:Stop() end) end
-        LyricsLabel.Visible = false
-    end
-})
-
---【修复重点：之前这行多出来的Tab:AddToggle代码已经删掉】
-
--- 基础播放控件
-Tab:AddButton({
-    Name = "开始播放音乐",
-    Callback = function()
-        if CurrentSoundId == "rbxassetid://0" then
-            OrionLib:MakeNotification({Name="错误",Content="请先输入或选择有效的音频ID！",Time=3})
+Tab:AddTextbox({ Name = "❌删除歌单里指定ID", Default = "输入要删除的ID", TextDisappear = true, Callback = function(val)
+    local id = string.gsub(val, "%D", "")
+    if id == "" then return end
+    for i, v in ipairs(MusicList) do
+        if v == id then
+            table.remove(MusicList, i)
+            OrionLib:MakeNotification({Name="已删除",Content="ID: "..id.." 已移除，请点击下方刷新按钮更新下拉菜单",Time=3})
             return
         end
-        if not MusicSound then
-            MusicSound = Instance.new("Sound")
-            MusicSound.Name = "PlayerMusic"
-            MusicSound.Parent = game:GetService("SoundService")
-            MusicSound.Looped = LoopEnabled
-            MusicSound.Volume = CurrentVolume / 100
-            MusicSound.PlaybackSpeed = PlaySpeed
-            pcall(function()
-                MusicSound.Ended:Connect(function()
-                    if AutoNextOnEnd and not LoopEnabled then
-                        CurrentPlaylistIndex +=1
-                        if CurrentPlaylistIndex>#MusicList then CurrentPlaylistIndex=1 end
-                        local selId = MusicList[CurrentPlaylistIndex]
-                        CurrentSoundId = "rbxassetid://"..selId
-                        MusicSound.SoundId = CurrentSoundId
-                        MusicSound:Play()
-                    end
-                end)
-            end)
-        end
-        MusicSound.SoundId = CurrentSoundId
-        pcall(function() MusicSound:Play() end)
-        
-        -- 开启歌词同步（修复了之前可能卡死UI的Toggle代码）
-        if LyricsEnabled and not LyricsTask then
-            LyricsLabel.Visible = true
-            LyricsTask = task.spawn(function()
-                while LyricsEnabled do
-                    task.wait(0.1)
-                    if not MusicSound then break end
-                    local currentTime = MusicSound.TimePosition
-                    if LyricsIsTimestamped then
-                        for i, line in ipairs(LyricsTable) do
-                            local mm, ss, text = string.match(line, "%[(%d+):(%d+)%](.+)")
-                            if mm and ss and text then
-                                local targetTime = (tonumber(mm) * 60) + tonumber(ss)
-                                if currentTime >= targetTime and (i == #LyricsTable or currentTime < (tonumber(string.match(LyricsTable[i+1], "%[(%d+):(%d+)%]")) or 999999) * 1) then
-                                    LyricsLabel.Text = text
-                                end
-                            end
-                        end
-                    else
-                        local currentLine = math.floor(currentTime / LyricsInterval) + 1
-                        if currentLine > #LyricsTable then LyricsLabel.Text = "---"
-                        elseif currentLine ~= CurrentLyricIndex then
-                            CurrentLyricIndex = currentLine
-                            LyricsLabel.Text = LyricsTable[currentLine]
-                        end
-                    end
-                end
-            end)
+    end
+end})
+
+Tab:AddButton({ Name = "🧹清空自定义歌单", Callback = function()
+    MusicList = {"1845918434", "1843463175", "1837844742", "1843497734", "1840172845", "1334940365"}
+    CurrentPlaylistIndex = 1
+    OrionLib:MakeNotification({Name="已重置",Content="歌单已恢复原始预置列表，请点击下方刷新按钮更新",Time=3})
+end})
+
+-- =====【新增：手动安全刷新按钮，专门用来修复点击下拉菜单卡死问题】=====
+Tab:AddButton({ Name = "🔄 刷新下拉菜单(修复卡死)", Callback = function()
+    -- 延迟0.2秒，等UI彻底冷却后再刷新，防止瞬间操作导致崩溃
+    task.spawn(function()
+        task.wait(0.2)
+        pcall(function()
+            Dropdown:Refresh()
+        end)
+    end)
+    OrionLib:MakeNotification({Name="正在刷新",Content="请稍候，下拉菜单即将恢复可用",Time=2})
+end})
+
+-- 导入歌单 (同样不自动刷新，等待用户手动点击刷新)
+Tab:AddTextbox({ Name = "📥导入歌单(换行分隔ID)", Default = "粘贴多行ID", TextDisappear = true, Callback = function(text)
+    for id in string.gmatch(text, "[^\r\n]+") do
+        id = string.gsub(id, "%D", "")
+        if id ~= "" and #id > 2 then
+            table.insert(MusicList, id)
         end
     end
-})
-Tab:AddButton({
-    Name = "重新播放音乐",
-    Callback = function() if MusicSound then MusicSound:Stop(); MusicSound:Play() end end
-})
-Tab:AddButton({
-    Name = "停止播放音乐",
-    Callback = function() if MusicSound then MusicSound:Stop() end end
-})
-Tab:AddButton({
-    Name = "继续播放音乐",
-    Callback = function() if MusicSound then MusicSound:Resume() end end
-})
+    OrionLib:MakeNotification({Name="导入完成",Content="已批量添加，请点击下方刷新按钮更新",Time=3})
+end})
+
+-- 自动切歌
+Tab:AddTextbox({ Name = "🔁自动切歌间隔(秒)", Default = "30", TextDisappear = true, Callback = function(val)
+    local num = tonumber(val)
+    if num and num >=5 then AutoRandomDelay = num end
+end})
+Tab:AddToggle({ Name = "🔁开启自动随机切歌", Default = false, Callback = function(state)
+    AutoRandomEnabled = state
+    if state then
+        AutoRandomTask = task.spawn(function()
+            while AutoRandomEnabled do
+                task.wait(AutoRandomDelay)
+                if not AutoRandomEnabled then break end
+                local randI = math.random(1,#MusicList)
+                CurrentPlaylistIndex = randI
+                local sid = MusicList[randI]
+                CurrentSoundId = "rbxassetid://"..sid
+                if MusicSound then pcall(function() MusicSound.SoundId = CurrentSoundId; MusicSound:Play() end) end
+            end
+        end)
+    else
+        if AutoRandomTask then task.cancel(AutoRandomTask) AutoRandomTask=nil end
+    end
+end})
+
+-- 歌曲结束自动下一首
+Tab:AddToggle({ Name = "✨歌曲结束自动下一首", Default = false, Callback = function(state)
+    AutoNextOnEnd = state
+    if MusicSound and state then
+        pcall(function()
+            MusicSound.Ended:Connect(function()
+                if AutoNextOnEnd and not LoopEnabled then
+                    CurrentPlaylistIndex +=1
+                    if CurrentPlaylistIndex>#MusicList then CurrentPlaylistIndex=1 end
+                    local selId = MusicList[CurrentPlaylistIndex]
+                    CurrentSoundId = "rbxassetid://"..selId
+                    MusicSound.SoundId = CurrentSoundId
+                    MusicSound:Play()
+                end
+            end)
+        end)
+    end
+end})
+
+-- 淡入淡出
+Tab:AddTextbox({ Name = "🌫设置淡入淡出时间(秒)", Default = "0.5", TextDisappear = true, Callback = function(val)
+    local t = tonumber(val)
+    if t and t > 0 then FadeTime = t end
+end})
+Tab:AddButton({ Name = "🌫音量淡入淡出切换", Callback = function()
+    if not MusicSound then return end
+    task.spawn(function()
+        local startVol = MusicSound.Volume
+        local target = startVol>0 and 0 or LastVolume/100
+        local steps = 20
+        local delta = (target-startVol)/steps
+        for i=1,steps do task.wait(FadeTime/steps); MusicSound.Volume = startVol + delta*i end
+        CurrentVolume = math.floor(target*100)
+    end)
+end})
+
+-- 歌词
+Tab:AddTextbox({ Name = "📝导入歌词(支持[分:秒]格式)", Default = "每行一句歌词，或[00:10]歌词格式", TextDisappear = false, Callback = function(text)
+    LyricsTable = {}
+    LyricsIsTimestamped = false
+    for line in string.gmatch(text, "[^\r\n]+") do
+        table.insert(LyricsTable, line)
+        if string.match(line, "%[(%d+):(%d+)%]") then LyricsIsTimestamped = true end
+    end
+end})
+Tab:AddToggle({ Name = "🎤显示歌词", Default = false, Callback = function(state)
+    LyricsEnabled = state
+    LyricsLabel.Visible = LyricsEnabled
+    if state and MusicSound then
+        if LyricsTask then task.cancel(LyricsTask) end
+        LyricsTask = task.spawn(function()
+            while LyricsEnabled do
+                task.wait(0.1)
+                if not MusicSound or not LyricsEnabled then break end
+                local currentTime = MusicSound.TimePosition
+                if LyricsIsTimestamped then
+                    for i, line in ipairs(LyricsTable) do
+                        local mm, ss, text = string.match(line, "%[(%d+):(%d+)%](.+)")
+                        if mm and ss and text then
+                            local targetTime = (tonumber(mm) * 60) + tonumber(ss)
+                            if currentTime >= targetTime and (i == #LyricsTable or currentTime < (tonumber(string.match(LyricsTable[i+1], "%[(%d+):(%d+)%]")) or 999999) * 1) then
+                                LyricsLabel.Text = text
+                            end
+                        end
+                    end
+                else
+                    local currentLine = math.floor(currentTime / LyricsInterval) + 1
+                    if currentLine > #LyricsTable then LyricsLabel.Text = "---"
+                    elseif currentLine ~= CurrentLyricIndex then
+                        CurrentLyricIndex = currentLine
+                        LyricsLabel.Text = LyricsTable[currentLine]
+                    end
+                end
+            end
+        end)
+    end
+end})
+
+-- 睡眠定时
+Tab:AddTextbox({ Name = "⏰设置睡眠定时(秒)", Default = "60", TextDisappear = true, Callback = function(val)
+    local t = tonumber(val)
+    if t and t > 0 then SleepDuration = t end
+end})
+Tab:AddButton({ Name = "⏰开启睡眠定时", Callback = function()
+    if SleepTask then task.cancel(SleepTask); SleepTask = nil end
+    SleepTask = task.spawn(function()
+        task.wait(SleepDuration)
+        if MusicSound then pcall(function() MusicSound:Pause() end) end
+    end)
+end})
+
+-- 总控停止
+Tab:AddButton({ Name = "🛑全部停止&关闭自动切歌", Callback = function()
+    AutoRandomEnabled = false
+    if AutoRandomTask then task.cancel(AutoRandomTask) AutoRandomTask=nil end
+    if SleepTask then task.cancel(SleepTask) SleepTask=nil end
+    if LyricsTask then task.cancel(LyricsTask) LyricsTask=nil end
+    if MusicSound then pcall(function() MusicSound:Stop() end) end
+end})
+
+-- 基础播放控件
+Tab:AddButton({ Name = "开始播放音乐", Callback = function()
+    if CurrentSoundId == "rbxassetid://0" then return end
+    if not MusicSound then
+        MusicSound = Instance.new("Sound")
+        MusicSound.Name = "PlayerMusic"
+        MusicSound.Parent = game:GetService("SoundService")
+        MusicSound.Looped = LoopEnabled
+        MusicSound.Volume = CurrentVolume / 100
+        MusicSound.PlaybackSpeed = PlaySpeed
+    end
+    MusicSound.SoundId = CurrentSoundId
+    pcall(function() MusicSound:Play() end)
+end})
+Tab:AddButton({ Name = "重新播放音乐", Callback = function() if MusicSound then MusicSound:Stop(); MusicSound:Play() end end })
+Tab:AddButton({ Name = "停止播放音乐", Callback = function() if MusicSound then MusicSound:Stop() end end })
+Tab:AddButton({ Name = "继续播放音乐", Callback = function() if MusicSound then MusicSound:Resume() end end })
 
 -- 初始化UI
 OrionLib:Init()
