@@ -1206,3 +1206,9 @@ Tab:AddToggle({
         end
     end
 })
+Tab:AddButton({
+    Name = "我的播放器",
+        Callback = function()
+loadstring(game:HttpGet("https://raw.githubusercontent.com/dhvkgbhic/1578/refs/heads/main/music"))()
+  end
+})
