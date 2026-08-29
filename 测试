@@ -178,7 +178,7 @@ local RefreshTimer = 0
 
 -- 添加到UI
 Tab:AddToggle({
-    Name = "扩大Hitbox",
+    Name = "扩大Hitbox（小）",
     Default = false,
     Callback = function(Value)
         HitboxEnabled = Value
@@ -317,6 +317,203 @@ Tab:AddToggle({
         end
     end)()
 })
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local LocalPlayer = Players.LocalPlayer
+
+local HitboxEnabled = false
+local OriginalSizes = {} -- 记录原始大小，方便恢复
+local HitboxVisuals = {} -- 存储显示的红框
+local RefreshTimer = 0
+
+-- 添加到UI
+Tab:AddToggle({
+    Name = "扩大Hitbox（中）",
+    Default = false,
+    Callback = function(Value)
+        HitboxEnabled = Value
+        
+        -- 如果关闭，清理所有
+        if not Value then
+            for _, part in pairs(HitboxVisuals) do
+                if part and part.Parent then part:Destroy() end
+            end
+            table.clear(HitboxVisuals)
+            
+            -- 恢复原始大小
+            for _, player in pairs(Players:GetPlayers()) do
+                if player ~= LocalPlayer and player.Character then
+                    local HRP = player.Character:FindFirstChild("HumanoidRootPart")
+                    if HRP and OriginalSizes[player.Name] then
+                        HRP.Size = OriginalSizes[player.Name]
+                        HRP.CanCollide = false
+                    end
+                end
+            end
+            table.clear(OriginalSizes)
+        end
+    end
+})
+
+-- 每帧执行的实时更新循环（解决“掉”和“不跟随”）
+RunService.RenderStepped:Connect(function(dt)
+    if not HitboxEnabled then return end
+    
+    -- 每 3 秒刷新一次玩家列表
+    RefreshTimer = RefreshTimer + dt
+    if RefreshTimer >= 3 then
+        RefreshTimer = 0
+        
+        -- 清理已经不在服里或没有角色的玩家的视觉框
+        for name, part in pairs(HitboxVisuals) do
+            local player = Players:FindFirstChild(name)
+            if not player or not player.Character or not player.Character:FindFirstChild("HumanoidRootPart") then
+                if part then part:Destroy() end
+                HitboxVisuals[name] = nil
+                OriginalSizes[name] = nil
+            end
+        end
+        
+        -- 给新玩家创建红框并记录原始大小
+        for _, player in pairs(Players:GetPlayers()) do
+            if player ~= LocalPlayer and player.Character then
+                local HRP = player.Character:FindFirstChild("HumanoidRootPart")
+                if HRP and not HitboxVisuals[player.Name] then
+                    -- 记录原始大小
+                    OriginalSizes[player.Name] = HRP.Size
+                    
+                    -- 创建半透明红色方框
+                    local Visual = Instance.new("Part")
+                    Visual.Name = "HitboxVisual"
+                    Visual.Anchored = true -- 禁止掉落
+                    Visual.CanCollide = false
+                    Visual.CastShadow = false
+                    Visual.Transparency = 0.5 -- 半透明
+                    Visual.BrickColor = BrickColor.new("Really red")
+                    Visual.Material = Enum.Material.ForceField
+                    Visual.Size = Vector3.new(22, 22, 22) -- 扩大后的Hitbox大小
+                    Visual.Parent = workspace
+                    
+                    HitboxVisuals[player.Name] = Visual
+                end
+            end
+        end
+    end
+    
+    -- 实时更新所有玩家的Hitbox大小和红框位置
+    for name, visual in pairs(HitboxVisuals) do
+        local player = Players:FindFirstChild(name)
+        if player and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+            local HRP = player.Character.HumanoidRootPart
+            
+            -- 真实扩大判定体积（设置为你希望的大小）
+            HRP.Size = Vector3.new(22, 22, 22)
+            HRP.CanCollide = false
+            
+            -- 更新红框位置，完美吸附
+            visual.CFrame = HRP.CFrame
+        end
+    end
+end)
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local LocalPlayer = Players.LocalPlayer
+
+local HitboxEnabled = false
+local OriginalSizes = {} -- 记录原始大小，方便恢复
+local HitboxVisuals = {} -- 存储显示的红框
+local RefreshTimer = 0
+
+-- 添加到UI
+Tab:AddToggle({
+    Name = "扩大Hitbox（大）",
+    Default = false,
+    Callback = function(Value)
+        HitboxEnabled = Value
+        
+        -- 如果关闭，清理所有
+        if not Value then
+            for _, part in pairs(HitboxVisuals) do
+                if part and part.Parent then part:Destroy() end
+            end
+            table.clear(HitboxVisuals)
+            
+            -- 恢复原始大小
+            for _, player in pairs(Players:GetPlayers()) do
+                if player ~= LocalPlayer and player.Character then
+                    local HRP = player.Character:FindFirstChild("HumanoidRootPart")
+                    if HRP and OriginalSizes[player.Name] then
+                        HRP.Size = OriginalSizes[player.Name]
+                        HRP.CanCollide = false
+                    end
+                end
+            end
+            table.clear(OriginalSizes)
+        end
+    end
+})
+
+-- 每帧执行的实时更新循环（解决“掉”和“不跟随”）
+RunService.RenderStepped:Connect(function(dt)
+    if not HitboxEnabled then return end
+    
+    -- 每 3 秒刷新一次玩家列表
+    RefreshTimer = RefreshTimer + dt
+    if RefreshTimer >= 3 then
+        RefreshTimer = 0
+        
+        -- 清理已经不在服里或没有角色的玩家的视觉框
+        for name, part in pairs(HitboxVisuals) do
+            local player = Players:FindFirstChild(name)
+            if not player or not player.Character or not player.Character:FindFirstChild("HumanoidRootPart") then
+                if part then part:Destroy() end
+                HitboxVisuals[name] = nil
+                OriginalSizes[name] = nil
+            end
+        end
+        
+        -- 给新玩家创建红框并记录原始大小
+        for _, player in pairs(Players:GetPlayers()) do
+            if player ~= LocalPlayer and player.Character then
+                local HRP = player.Character:FindFirstChild("HumanoidRootPart")
+                if HRP and not HitboxVisuals[player.Name] then
+                    -- 记录原始大小
+                    OriginalSizes[player.Name] = HRP.Size
+                    
+                    -- 创建半透明红色方框
+                    local Visual = Instance.new("Part")
+                    Visual.Name = "HitboxVisual"
+                    Visual.Anchored = true -- 禁止掉落
+                    Visual.CanCollide = false
+                    Visual.CastShadow = false
+                    Visual.Transparency = 0.5 -- 半透明
+                    Visual.BrickColor = BrickColor.new("Really red")
+                    Visual.Material = Enum.Material.ForceField
+                    Visual.Size = Vector3.new(40, 40, 40) -- 扩大后的Hitbox大小
+                    Visual.Parent = workspace
+                    
+                    HitboxVisuals[player.Name] = Visual
+                end
+            end
+        end
+    end
+    
+    -- 实时更新所有玩家的Hitbox大小和红框位置
+    for name, visual in pairs(HitboxVisuals) do
+        local player = Players:FindFirstChild(name)
+        if player and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+            local HRP = player.Character.HumanoidRootPart
+            
+            -- 真实扩大判定体积（设置为你希望的大小）
+            HRP.Size = Vector3.new(40, 40, 40)
+            HRP.CanCollide = false
+            
+            -- 更新红框位置，完美吸附
+            visual.CFrame = HRP.CFrame
+        end
+    end
+end)
 
 Tab:AddToggle({
     Name = "解除视角缩放限制",
