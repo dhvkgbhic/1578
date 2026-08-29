@@ -12,37 +12,6 @@ local Tab = Window:MakeTab({
     PremiumOnly = false
 })
 
--- 核心变量
-local MusicSound = nil
-local CurrentSoundId = "rbxassetid://0"
-local CurrentVolume = 50
-
-local LoopEnabled = true
-local LastVolume = CurrentVolume
-local PlaySpeed = 1
-local AutoRandomEnabled = false
-local AutoRandomDelay = 30
-local AutoRandomTask = nil
-local CurrentPlaylistIndex = 1
-local AutoNextOnEnd = false
-local FadeTime = 0.5
-
-local CountDownTask = nil
-local GlobalGameVolume = 1
-local SoundParentMode = "SoundService"
-
--- 默认预置歌单
-local DefaultMusicList = {
-    "1845918434",
-    "1843463175",
-    "1837844742",
-    "1843497734",
-    "1840172845",
-    "1334940365"
-}
-local MusicList = OrionLib:GetConfig("SavedPlaylist") or DefaultMusicList
-
---====================【播放按钮放到整个Tab最顶部】====================
 Tab:AddButton({
     Name = "开始播放音乐",
     Callback = function()
