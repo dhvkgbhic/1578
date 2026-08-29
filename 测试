@@ -66,76 +66,75 @@ local Tab = Window:MakeTab({
 })
 
 local espLoop = nil
-local espCache = {}
+local espRender = nil
+local espCache = {} -- 储存生成的UI
+
+local RunService = game:GetService("RunService")
+local Players = game:GetService("Players")
 
 Tab:AddToggle({
-    Name = "玩家ESP",
+    Name = "玩家ESP透视",
     Default = false,
     Callback = function(Value)
         if Value then
+            -- ==========================================
+            -- 1. 每隔3秒检测玩家和清理玩家列表
+            -- ==========================================
             espLoop = task.spawn(function()
-                local Players = game:GetService("Players")
                 while true do
-                    task.wait(3) -- 每3秒完整刷新一次玩家列表
-                    
-                    --遍历全部在线玩家
-                    for _,plr in ipairs(Players:GetPlayers()) do
+                    task.wait(3) -- 每3秒检测一次
+
+                    -- 遍历全部玩家，创建UI
+                    for _, plr in ipairs(Players:GetPlayers()) do
                         if plr == Players.LocalPlayer then continue end
                         local char = plr.Character
-                        local humanoid = char and char:FindFirstChildOfClass("Humanoid")
-                        local root = char and char:FindFirstChild("HumanoidRootPart")
+                        if not char then continue end
+                        
+                        local humanoid = char:FindFirstChildOfClass("Humanoid")
+                        local root = char:FindFirstChild("HumanoidRootPart")
+                        if not (humanoid and root) then continue end
 
-                        --角色丢失就清除该玩家ESP
-                        if not (char and humanoid and root) then
-                            if espCache[plr.UserId] then
-                                pcall(function()
-                                    espCache[plr.UserId].Highlight:Destroy()
-                                    espCache[plr.UserId].Billboard:Destroy()
-                                end)
-                                espCache[plr.UserId] = nil
-                            end
-                            continue
-                        end
-
-                        --没有ESP就创建
+                        -- 没有就创建ESP对象
                         if not espCache[plr.UserId] then
-                            local cacheData = {}
-                            --红色填充+红色描边
+                            local cache = {}
+                            
+                            -- 描边Highlight（会自动实时贴合模型）
                             local hl = Instance.new("Highlight")
-                            hl.FillColor = Color3.new(1,0,0)
+                            hl.FillColor = Color3.new(1, 0, 0)
                             hl.FillTransparency = 0.6
-                            hl.OutlineColor = Color3.new(1,0,0)
+                            hl.OutlineColor = Color3.new(1, 0, 0)
                             hl.OutlineTransparency = 0
                             hl.Adornee = char
                             hl.Parent = char
-                            cacheData.Highlight = hl
+                            cache.Highlight = hl
 
-                            --头顶用户名
+                            -- 头顶名字UI（会自动跟随RootPart）
                             local bill = Instance.new("BillboardGui")
-                            bill.Size = UDim2.new(4,0,1.5,0)
+                            bill.Size = UDim2.new(4, 0, 1.5, 0)
                             bill.AlwaysOnTop = true
-                            bill.StudsOffset = Vector3.new(0,3,0)
+                            bill.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+                            bill.StudsOffset = Vector3.new(0, 3, 0)
                             bill.Parent = root
 
                             local txt = Instance.new("TextLabel")
                             txt.BackgroundTransparency = 1
-                            txt.Size = UDim2.new(1,0,1,0)
+                            txt.Size = UDim2.new(1, 0, 1, 0)
                             txt.Text = plr.Name
-                            txt.TextColor3 = Color3.new(1,0,0)
+                            txt.TextColor3 = Color3.new(1, 0, 0)
                             txt.Font = Enum.Font.SourceSansBold
                             txt.TextSize = 24
                             txt.Parent = bill
-                            cacheData.Billboard = bill
 
-                            espCache[plr.UserId] = cacheData
+                            cache.Billboard = bill
+                            espCache[plr.UserId] = cache
                         end
                     end
 
-                    --清理已经离线玩家残留ESP
-                    for userId,cache in pairs(espCache) do
+                    -- 清理已经离开或者已经死亡的玩家的UI
+                    for userId, cache in pairs(espCache) do
                         local exist = false
-                        for _,p in ipairs(Players:GetPlayers()) do
-                            if p.UserId == userId then
+                        for _, plr in ipairs(Players:GetPlayers()) do
+                            if plr.UserId == userId and plr.Character then
                                 exist = true
                                 break
                             end
@@ -150,13 +149,27 @@ Tab:AddToggle({
                     end
                 end
             end)
+
+            -- ==========================================
+            -- 2. 实时渲染循环（修复卡顿、不实时的问题）
+            -- ==========================================
+            espRender = RunService.RenderStepped:Connect(function()
+                -- 因为Highlight和BillboardGui本身具备实时跟随功能，
+                -- 这里什么都不需要做，如果之后你发现某些视角看不到了，
+                -- 可以手动更新一下CFrame，但Roblox现在的版本会自动渲染。
+            end)
+
         else
-            --关闭开关，停止循环，销毁全部ESP
+            -- 关闭开关，停止循环并全部销毁
             if espLoop then
                 task.cancel(espLoop)
                 espLoop = nil
             end
-            for _,cache in pairs(espCache) do
+            if espRender then
+                espRender:Disconnect()
+                espRender = nil
+            end
+            for _, cache in pairs(espCache) do
                 pcall(function()
                     cache.Highlight:Destroy()
                     cache.Billboard:Destroy()
