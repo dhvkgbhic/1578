@@ -65,116 +65,156 @@ local Tab = Window:MakeTab({
 
 })
 
+local espLoop = nil
+local espCache = {} --储存生成的UI，关闭开关时清理
+
 Tab:AddToggle({
     Name = "玩家ESP透视",
     Default = false,
-    Callback = (function()
-        local loopThread = nil
-        local espCache = {} -- 缓存所有创建的透视对象，用于关闭时清理
-
-        -- 清理单个玩家的ESP组件
-        local function clearPlayerEsp(player)
-            if espCache[player] then
-                if espCache[player].Box then espCache[player].Box:Destroy() end
-                if espCache[player].NameGui then espCache[player].NameGui:Destroy() end
-                espCache[player] = nil
-            end
-        end
-
-        -- 给玩家角色添加描边+名字透视
-        local function addPlayerEsp(player)
-            local character = player.Character
-            if not character or not character:FindFirstChild("HumanoidRootPart") then return end
-
-            -- 避免重复创建
-            if espCache[player] then return end
-
-            -- 红色描边+半透明红色填充
-            local box = Instance.new("SelectionBox")
-            box.Name = "ESP_Outline"
-            box.LineColor3 = Color3.new(1, 0, 0)
-            box.SurfaceColor3 = Color3.new(1, 0, 0)
-            box.SurfaceTransparency = 0.7
-            box.AlwaysOnTop = true
-            box.Adornee = character
-            box.Parent = game.Workspace
-
-            -- 头顶用户名显示
-            local nameGui = Instance.new("BillboardGui")
-            nameGui.Name = "ESP_NameLabel"
-            nameGui.Size = UDim2.new(0, 120, 0, 25)
-            nameGui.StudsOffset = Vector3.new(0, 2.5, 0)
-            nameGui.AlwaysOnTop = true
-            nameGui.MaxDistance = math.huge
-
-            local nameText = Instance.new("TextLabel")
-            nameText.BackgroundTransparency = 1
-            nameText.TextColor3 = Color3.new(1, 1, 1)
-            nameText.TextScaled = true
-            nameText.Font = Enum.Font.SourceSansBold
-            nameText.Text = player.Name
-            nameText.Size = UDim2.new(1, 0, 1, 0)
-            nameText.Parent = nameGui
-
-            nameGui.Parent = character:WaitForChild("Head")
-
-            espCache[player] = {Box = box, NameGui = nameGui}
-        end
-
-        return function(Value)
-            -- 关闭开关：销毁所有透视对象，终止循环
-            if not Value then
-                if loopThread then
-                    task.cancel(loopThread)
-                    loopThread = nil
-                end
-                for player in pairs(espCache) do
-                    clearPlayerEsp(player)
-                end
-                table.clear(espCache)
-                return
-            end
-
-            if loopThread then return end
-
-            -- 开启循环：持续刷新玩家ESP
-            loopThread = task.spawn(function()
+    Callback = function(Value)
+        if Value then
+            espLoop = task.spawn(function()
+                local Players = game:GetService("Players")
                 while true do
-                    local players = game:GetService("Players"):GetPlayers()
-                    -- 给所有有角色的玩家添加ESP
-                    for _, player in ipairs(players) do
-                        if player.Character then
-                            pcall(addPlayerEsp, player)
+                    task.wait(0.2)
+                    --遍历全部玩家
+                    for _,plr in ipairs(Players:GetPlayers()) do
+                        if plr == Players.LocalPlayer then continue end
+                        local char = plr.Character
+                        if not char then continue end
+                        local humanoid = char:FindFirstChildOfClass("Humanoid")
+                        local root = char:FindFirstChild("HumanoidRootPart")
+                        if not (humanoid and root) then continue end
+
+                        --没有就创建ESP对象
+                        if not espCache[plr.UserId] then
+                            local cache = {}
+                            --描边Highlight
+                            local hl = Instance.new("Highlight")
+                            hl.FillColor = Color3.new(1,0,0)
+                            hl.FillTransparency = 0.6
+                            hl.OutlineColor = Color3.new(1,0,0)
+                            hl.OutlineTransparency = 0
+                            hl.Adornee = char
+                            hl.Parent = char
+                            cache.Highlight = hl
+
+                            --头顶名字UI
+                            local bill = Instance.new("BillboardGui")
+                            bill.Size = UDim2.new(4,0,1.5,0)
+                            bill.AlwaysOnTop = true
+                            bill.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+                            bill.StudsOffset = Vector3.new(0,3,0)
+                            bill.Parent = root
+
+                            local txt = Instance.new("TextLabel")
+                            txt.BackgroundTransparency = 1
+                            txt.Size = UDim2.new(1,0,1,0)
+                            txt.Text = plr.Name
+                            txt.TextColor3 = Color3.new(1,0,0)
+                            txt.Font = Enum.Font.SourceSansBold
+                            txt.TextSize = 24
+                            txt.Parent = bill
+
+                            cache.Billboard = bill
+                            espCache[plr.UserId] = cache
                         end
                     end
-                    -- 清理已离开/角色消失的玩家缓存
-                    for player in pairs(espCache) do
-                        if not player:IsDescendantOf(game.Players) or not player.Character then
-                            clearPlayerEsp(player)
+
+                    --清理已经离开/无角色玩家的ESP
+                    for userId, cache in pairs(espCache) do
+                        local exist = false
+                        for _,plr in ipairs(Players:GetPlayers()) do
+                            if plr.UserId == userId and plr.Character then
+                                exist = true
+                                break
+                            end
+                        end
+                        if not exist then
+                            pcall(function()
+                                cache.Highlight:Destroy()
+                                cache.Billboard:Destroy()
+                            end)
+                            espCache[userId] = nil
                         end
                     end
-                    task.wait(0.3)
                 end
             end)
+        else
+            --关闭开关，停止循环并全部销毁
+            if espLoop then
+                task.cancel(espLoop)
+                espLoop = nil
+            end
+            for _,cache in pairs(espCache) do
+                pcall(function()
+                    cache.Highlight:Destroy()
+                    cache.Billboard:Destroy()
+                end)
+            end
+            table.clear(espCache)
         end
-    end)()
+    end
 })
+
+local hitboxLoop = nil
+local originalParts = {} --保存原始尺寸，关闭开关恢复
+
+Tab:AddToggle({
+    Name = "Hitbox范围",
+    Default = false,
+    Callback = function(Value)
+        if Value then
+            hitboxLoop = task.spawn(function()
+                local LocalPlayer = game:GetService("Players").LocalPlayer
+                while true do
+                    task.wait(0.2)
+                    local char = LocalPlayer.Character
+                    if not char then continue end
+                    
+                    --遍历角色所有物理部件
+                    for _,part in ipairs(char:GetChildren()) do
+                        if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" then
+                            if not originalParts[part] then
+                                originalParts[part] = part.Size --记录原始大小
+                            end
+                            --放大倍数，2.2 = 2.2倍hitbox，自行调大/调小
+                            part.Size = originalParts[part] * 2.9
+                        end
+                    end
+                end
+            end)
+        else
+            if hitboxLoop then
+                task.cancel(hitboxLoop)
+                hitboxLoop = nil
+            end
+            --恢复原本大小
+            for part,oriSize in pairs(originalParts) do
+                pcall(function()
+                    part.Size = oriSize
+                end)
+            end
+            table.clear(originalParts)
+        end
+    end
+})
+
 Tab:AddToggle({
     Name = "穿墙",
     Default = false,
     Callback = (function()
         local loopThread = nil
         local LocalPlayer = game:GetService("Players").LocalPlayer
-        local rayParams = RaycastParams.new()
-        rayParams.FilterType = Enum.RaycastFilterType.Exclude
 
         return function(Value)
-            -- 关闭开关：终止循环，恢复角色全部碰撞
+            -- 关闭开关：终止循环，恢复角色碰撞
             if not Value then
                 if loopThread then
                     task.cancel(loopThread)
                     loopThread = nil
                 end
+                -- 恢复当前角色的碰撞属性
                 pcall(function()
                     local char = LocalPlayer.Character
                     if char then
@@ -188,44 +228,30 @@ Tab:AddToggle({
                 return
             end
 
+            -- 防止重复开启线程
             if loopThread then return end
 
             loopThread = task.spawn(function()
                 while true do
                     pcall(function()
                         local character = LocalPlayer.Character
-                        local root = character and character:FindFirstChild("HumanoidRootPart")
-                        local humanoid = character and character:FindFirstChild("Humanoid")
-
-                        if character and root and humanoid then
-                            -- 关闭角色所有部件碰撞，实现水平穿墙
+                        -- 角色存在且有根部件时才执行
+                        if character and character:FindFirstChild("HumanoidRootPart") then
+                            -- 遍历角色所有物理部件，关闭碰撞
                             for _, part in ipairs(character:GetDescendants()) do
                                 if part:IsA("BasePart") then
                                     part.CanCollide = false
                                 end
                             end
-
-                            -- 向下发射射线检测地面，排除角色自身
-                            rayParams.FilterDescendantsInstances = {character}
-                            local groundCheck = workspace:Raycast(
-                                root.Position,
-                                Vector3.new(0, -6, 0),
-                                rayParams
-                            )
-
-                            -- 检测到地面则修正角色高度，防止坠落
-                            if groundCheck then
-                                local targetHeight = groundCheck.Position.Y + humanoid.HipHeight + root.Size.Y / 2
-                                root.CFrame = CFrame.new(root.Position.X, targetHeight, root.Position.Z)
-                            end
                         end
                     end)
-                    task.wait(0.05)
+                    task.wait(0.1)
                 end
             end)
         end
     end)()
 })
+
 Tab:AddToggle({
     Name = "解除视角缩放限制",
     Default = false,
@@ -666,56 +692,43 @@ local Tab = Window:MakeTab({
         PremiumOnly = false
 })
 
-Tab:AddToggle({
-    Name = "自动挥刀",
-    Default = false,
-    Callback = function(Value)
-        if Value then
-            runLoop = task.spawn(function()
-                while task.wait(0.4) do
-                    local char = game:GetService("Players").LocalPlayer.Character
-                    if char then
-                        pcall(function()
-                            char:WaitForChild("Knife"):WaitForChild("KnifeServer"):WaitForChild("SlashStart"):FireServer()
-                        end)
-                    end
-                end
-            end)
-        else
-            if runLoop then
-                task.cancel(runLoop)
-                runLoop = nil
-            end
-        end
-    end
-})
+local runLoop = nil
 
 Tab:AddToggle({
-    Name = "循环传送全部玩家",
+    Name = "循环传送至玩家",
     Default = false,
     Callback = function(Value)
         if Value then
             runLoop = task.spawn(function()
                 local Players = game:GetService("Players")
                 local localPlr = Players.LocalPlayer
-                while task.wait(2.5) do
-                    local targetPlayers = {}
-                    --收集除自己以外所有在线玩家
-                    for _,plr in ipairs(Players:GetPlayers()) do
-                        if plr ~= localPlr and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
-                            table.insert(targetPlayers, plr)
+
+                while true do
+                    -- 获取可用目标（排除自己，角色必须存在）
+                    local targetList = {}
+                    for _, plr in ipairs(Players:GetPlayers()) do
+                        if plr ~= localPlr then
+                            local char = plr.Character
+                            if char and char:FindFirstChild("HumanoidRootPart") then
+                                table.insert(targetList, plr)
+                            end
                         end
                     end
-                    if #targetPlayers == 0 then continue end
-                    
-                    for _,targetPlr in ipairs(targetPlayers) do
+
+                    if #targetList == 0 then
+                        task.wait(0.5)
+                        continue
+                    end
+
+                    -- 逐个传送
+                    for _, targetPlr in ipairs(targetList) do
                         pcall(function()
                             local myChar = localPlr.Character
                             if myChar and myChar:FindFirstChild("HumanoidRootPart") and targetPlr.Character and targetPlr.Character.HumanoidRootPart then
-                                myChar.HumanoidRootPart.CFrame = targetPlr.Character.HumanoidRootPart.CFrame + Vector3.new(0,3,0)
+                                myChar.HumanoidRootPart.CFrame = targetPlr.Character.HumanoidRootPart.CFrame + Vector3.new(0, 3, 0)
                             end
                         end)
-                        task.wait(0.3) --间隔1秒传送到下一位玩家
+                        task.wait(1)
                     end
                 end
             end)
