@@ -60,6 +60,28 @@ Tab:AddButton({
     end
 })
 
+local Section = Tab:AddSection({
+        Name = "好听↓"
+})
+
+
+Tab:AddButton({
+
+        Name = "复制一个好听的",
+
+        Callback = function()
+
+     setclipboard("77715601943266")
+
+          end
+
+})
+
+local Section = Tab:AddSection({
+        Name = "好听↑"
+})
+
+
 -- 手动输入音频ID
 Tab:AddTextbox({
     Name = "手动输入音频ID",
@@ -161,7 +183,7 @@ Tab:AddButton({
 })
 
 local Tab = Window:MakeTab({
-    Name = "贡献者",
+    Name = "贡献者 及 返回",
         Icon = "rbxassetid://18270615016",
         PremiumOnly = false
 })
@@ -186,6 +208,12 @@ local Section = Tab:AddSection({
         Name = "感谢🙃"
 })
 
+Tab:AddButton({
+    Name = "喵喵~星⭐️星0.02",
+        Callback = function()
+loadstring(game:HttpGet("https://raw.githubusercontent.com/dhvkgbhic/1578/refs/heads/main/tongyu"))()
+  end
+})
 
 -- 初始化UI
 OrionLib:Init()
