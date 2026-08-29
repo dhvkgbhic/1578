@@ -9,7 +9,7 @@ local Window = OrionLib:MakeWindow({
 })
 
 local Tab = Window:MakeTab({
-    Name = "音乐",
+    Name = "音乐控制",
     Icon = "rbxassetid://18270615016",
     PremiumOnly = false
 })
@@ -17,9 +17,9 @@ local Tab = Window:MakeTab({
 -- 核心变量
 local MusicSound = nil
 local CurrentSoundId = "rbxassetid://0" 
-local CurrentVolume = 5
+local CurrentVolume = 50 -- 默认音量设为50（对应0.5）
 
--- 预置的音乐ID列表（你可以随意修改里面的数字）
+-- 预置的音乐ID列表
 local MusicList = {
     "1845918434", 
     "1843463175",
@@ -29,7 +29,7 @@ local MusicList = {
     "1334940365"
 }
 
--- 新增：音乐ID选择下拉菜单
+-- 音乐ID选择下拉菜单
 Tab:AddDropdown({
     Name = "选择音乐ID",
     Default = "1845918434",
@@ -44,18 +44,14 @@ Tab:AddDropdown({
     end
 })
 
--- 新增：一键复制选中的ID（方便你分享给别人）
+-- 复制选中的ID
 Tab:AddButton({
     Name = "复制选中的音乐ID",
     Callback = function()
-        -- 提取纯数字ID用于复制
         local PureID = string.gsub(CurrentSoundId, "rbxassetid://", "")
-        
-        -- 调用Roblox内置剪贴板 API
         pcall(function()
             game:GetService("GuiService"):SetClipboard(PureID)
         end)
-
         OrionLib:MakeNotification({
             Name = "复制成功",
             Content = "ID已复制: " .. PureID,
@@ -64,49 +60,48 @@ Tab:AddButton({
     end
 })
 
-Tab:AddButton({
-
-        Name = "复制一个超好听的",
-
-        Callback = function()
-
-     setclipboard("77715601943266")
-
-          end
-
-})
-
-
--- 原有的：输入音频ID (保留手动输入功能)
+-- 手动输入音频ID
 Tab:AddTextbox({
     Name = "手动输入音频ID",
-    Default = "例如: 1845918434",
+    Default = "例如:1000＿",
     TextDisappear = true,
     Callback = function(Value)
         CurrentSoundId = "rbxassetid://" .. Value
     end
 })
 
--- 原有的：音量控制滑条
-Tab:AddSlider({
-    Name = "音量控制 (0-10)",
-    MinValue = 0,
-    MaxValue = 10,
-    Default = CurrentVolume,
-    Color = Color3.fromRGB(255, 0, 0),
-    Increment = 1,
+-- ==========================================
+-- 【新版】音量控制设置（替换了原来的滑条）
+-- 输入范围：0 - 100
+-- ==========================================
+Tab:AddTextbox({
+    Name = "音量控制设置 (0-100)",
+    Default = "50",
+    TextDisappear = true,
     Callback = function(Value)
-        local numValue = tonumber(Value) or CurrentVolume
-        CurrentVolume = numValue
+        -- 把文本转换成数字，防止输入文字报错
+        local vol = tonumber(Value)
+        if not vol then 
+            vol = 50 -- 如果输入的不是数字，就恢复默认
+        end
+        
+        -- 限制音量范围在 0 到 100 之间
+        if vol > 100 then vol = 100 end
+        if vol < 0 then vol = 0 end
+        
+        CurrentVolume = vol
+        
+        -- 实时应用音量（除以100转换为Roblox的0-1）
         if MusicSound then
             pcall(function()
-                MusicSound.Volume = numValue / 10
+                MusicSound.Volume = CurrentVolume / 100
             end)
         end
     end
 })
+-- ==========================================
 
--- 原有的：开始播放
+-- 开始播放
 Tab:AddButton({
     Name = "开始播放音乐",
     Callback = function()
@@ -124,7 +119,7 @@ Tab:AddButton({
             MusicSound.Name = "PlayerMusic"
             MusicSound.Parent = game:GetService("SoundService")
             MusicSound.Looped = true
-            MusicSound.Volume = tonumber(CurrentVolume) / 10
+            MusicSound.Volume = CurrentVolume / 100
         end
         
         MusicSound.SoundId = CurrentSoundId
@@ -134,7 +129,7 @@ Tab:AddButton({
     end
 })
 
--- 原有的：重新播放
+-- 重新播放
 Tab:AddButton({
     Name = "重新播放音乐",
     Callback = function()
@@ -145,7 +140,7 @@ Tab:AddButton({
     end
 })
 
--- 原有的：停止播放
+-- 停止播放
 Tab:AddButton({
     Name = "停止播放音乐",
     Callback = function()
@@ -155,7 +150,7 @@ Tab:AddButton({
     end
 })
 
--- 原有的：继续播放
+-- 继续播放
 Tab:AddButton({
     Name = "继续播放音乐",
     Callback = function()
@@ -164,6 +159,33 @@ Tab:AddButton({
         end
     end
 })
+
+local Tab = Window:MakeTab({
+    Name = "贡献者",
+        Icon = "rbxassetid://18270615016",
+        PremiumOnly = false
+})
+
+local Section = Tab:AddSection({
+        Name = "⭐️星喵~"
+})
+
+Tab:AddButton({
+
+        Name = "复制QQ群",
+
+        Callback = function()
+
+     setclipboard("460299170")
+
+          end
+
+})
+
+local Section = Tab:AddSection({
+        Name = "感谢🙃"
+})
+
 
 -- 初始化UI
 OrionLib:Init()
