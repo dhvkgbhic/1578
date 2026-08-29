@@ -66,30 +66,41 @@ local Tab = Window:MakeTab({
 })
 
 local espLoop = nil
-local espCache = {} --储存生成的UI，关闭开关时清理
+local espCache = {}
 
 Tab:AddToggle({
-    Name = "玩家ESP透视",
+    Name = "玩家ESP",
     Default = false,
     Callback = function(Value)
         if Value then
             espLoop = task.spawn(function()
                 local Players = game:GetService("Players")
                 while true do
-                    task.wait(0.2)
-                    --遍历全部玩家
+                    task.wait(3) -- 每3秒完整刷新一次玩家列表
+                    
+                    --遍历全部在线玩家
                     for _,plr in ipairs(Players:GetPlayers()) do
                         if plr == Players.LocalPlayer then continue end
                         local char = plr.Character
-                        if not char then continue end
-                        local humanoid = char:FindFirstChildOfClass("Humanoid")
-                        local root = char:FindFirstChild("HumanoidRootPart")
-                        if not (humanoid and root) then continue end
+                        local humanoid = char and char:FindFirstChildOfClass("Humanoid")
+                        local root = char and char:FindFirstChild("HumanoidRootPart")
 
-                        --没有就创建ESP对象
+                        --角色丢失就清除该玩家ESP
+                        if not (char and humanoid and root) then
+                            if espCache[plr.UserId] then
+                                pcall(function()
+                                    espCache[plr.UserId].Highlight:Destroy()
+                                    espCache[plr.UserId].Billboard:Destroy()
+                                end)
+                                espCache[plr.UserId] = nil
+                            end
+                            continue
+                        end
+
+                        --没有ESP就创建
                         if not espCache[plr.UserId] then
-                            local cache = {}
-                            --描边Highlight
+                            local cacheData = {}
+                            --红色填充+红色描边
                             local hl = Instance.new("Highlight")
                             hl.FillColor = Color3.new(1,0,0)
                             hl.FillTransparency = 0.6
@@ -97,13 +108,12 @@ Tab:AddToggle({
                             hl.OutlineTransparency = 0
                             hl.Adornee = char
                             hl.Parent = char
-                            cache.Highlight = hl
+                            cacheData.Highlight = hl
 
-                            --头顶名字UI
+                            --头顶用户名
                             local bill = Instance.new("BillboardGui")
                             bill.Size = UDim2.new(4,0,1.5,0)
                             bill.AlwaysOnTop = true
-                            bill.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
                             bill.StudsOffset = Vector3.new(0,3,0)
                             bill.Parent = root
 
@@ -115,17 +125,17 @@ Tab:AddToggle({
                             txt.Font = Enum.Font.SourceSansBold
                             txt.TextSize = 24
                             txt.Parent = bill
+                            cacheData.Billboard = bill
 
-                            cache.Billboard = bill
-                            espCache[plr.UserId] = cache
+                            espCache[plr.UserId] = cacheData
                         end
                     end
 
-                    --清理已经离开/无角色玩家的ESP
-                    for userId, cache in pairs(espCache) do
+                    --清理已经离线玩家残留ESP
+                    for userId,cache in pairs(espCache) do
                         local exist = false
-                        for _,plr in ipairs(Players:GetPlayers()) do
-                            if plr.UserId == userId and plr.Character then
+                        for _,p in ipairs(Players:GetPlayers()) do
+                            if p.UserId == userId then
                                 exist = true
                                 break
                             end
@@ -141,7 +151,7 @@ Tab:AddToggle({
                 end
             end)
         else
-            --关闭开关，停止循环并全部销毁
+            --关闭开关，停止循环，销毁全部ESP
             if espLoop then
                 task.cancel(espLoop)
                 espLoop = nil
