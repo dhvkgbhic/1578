@@ -1,18 +1,35 @@
--- 加载 UI 库
-local OrionLib = loadstring(game:HttpGet("https://raw.githubusercontent.com/dhvkgbhic/1578/refs/heads/main/ui"))()
+-- 加载 Rayfield UI 库
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
-local Window = OrionLib:MakeWindow({
+-- 创建窗口
+local Window = Rayfield:CreateWindow({
     Name = "音乐播放器",
-    HidePremium = false,
-    SaveConfig = true,
-    ConfigFolder = "MusicIDPlayer"
+    LoadingTitle = "音乐播放器",
+    LoadingSubtitle = "by 星喵",
+    ConfigurationSaving = {
+        Enabled = true,
+        FolderName = "MusicIDPlayer",
+        FileName = "config"
+    },
+    Discord = {
+        Enabled = false,
+        Invite = "",
+        RememberJoins = true
+    },
+    KeySystem = false,
+    KeySettings = {
+        Title = "Key",
+        Subtitle = "Key System",
+        Note = "No key",
+        FileName = "Key",
+        SaveKey = true,
+        GrabKeyFromWebsite = false,
+        Key = "1234"
+    }
 })
 
-local Tab = Window:MakeTab({
-    Name = "音乐控制",
-    Icon = "rbxassetid://18270615016",
-    PremiumOnly = false
-})
+-- 创建标签页
+local Tab = Window:CreateTab("音乐控制", 18270615016)
 
 -- ==================== 核心变量 ====================
 local MusicSound = nil
@@ -42,14 +59,10 @@ local MusicList = {
     "107797507930019"
 }
 
--- 当前播放列表索引（用于列表循环/顺序播放）
+-- 当前播放列表索引
 local CurrentPlaylistIndex = 1
-local EndedConnection = nil   -- 保存Ended事件连接
-
--- 定时停止相关
+local EndedConnection = nil
 local StopTimerThread = nil
-
--- 播放速度
 local PlaybackSpeed = 1.0
 
 -- ==================== 辅助函数 ====================
@@ -66,7 +79,6 @@ local function GetClipboard()
     return success and result or ""
 end
 
--- 清理旧的Ended连接
 local function ClearEndedConnection()
     if EndedConnection then
         pcall(function() EndedConnection:Disconnect() end)
@@ -74,9 +86,7 @@ local function ClearEndedConnection()
     end
 end
 
--- 更新历史记录
 local function AddToHistory(id)
-    -- 去重并移到最前
     for i, v in ipairs(HistoryList) do
         if v == id then
             table.remove(HistoryList, i)
@@ -89,7 +99,6 @@ local function AddToHistory(id)
     end
 end
 
--- 统一播放函数
 local function PlaySoundById(id, loopSingle)
     local soundId = "rbxassetid://" .. id
     if not MusicSound then
@@ -108,7 +117,6 @@ local function PlaySoundById(id, loopSingle)
     AddToHistory(id)
 end
 
--- 设置播放列表自动切换（用于自定义播放列表）
 local function SetupPlaylistAutoNext()
     ClearEndedConnection()
     if LoopMode == "single" or #CustomPlaylist == 0 then
@@ -140,14 +148,12 @@ local function SetupPlaylistAutoNext()
     end)
 end
 
--- 取消定时停止
 local function CancelAutoStop()
     if StopTimerThread then
         StopTimerThread = nil
     end
 end
 
--- 设置定时停止（秒）
 local function SetAutoStop(seconds)
     CancelAutoStop()
     if seconds and seconds > 0 then
@@ -156,10 +162,11 @@ local function SetAutoStop(seconds)
             if MusicSound and MusicSound.IsPlaying then
                 MusicSound:Stop()
                 ClearEndedConnection()
-                OrionLib:MakeNotification({
-                    Name = "定时停止",
+                Rayfield:Notify({
+                    Title = "定时停止",
                     Content = "音乐已自动停止",
-                    Time = 3
+                    Duration = 3,
+                    Image = 18270615016
                 })
             end
         end)
@@ -167,46 +174,46 @@ local function SetAutoStop(seconds)
 end
 
 -- ==================== 基础UI：音乐选择与输入 ====================
-Tab:AddDropdown({
+Tab:CreateDropdown({
     Name = "选择音乐ID",
-    Default = "1845918434",
     Options = MusicList,
+    CurrentOption = "1845918434",
     Callback = function(Value)
         CurrentSoundId = "rbxassetid://" .. Value
-        OrionLib:MakeNotification({
-            Name = "已选择",
+        Rayfield:Notify({
+            Title = "已选择",
             Content = "当前选中ID: " .. Value,
-            Time = 3
+            Duration = 3,
+            Image = 18270615016
         })
     end
 })
 
-Tab:AddButton({
+Tab:CreateButton({
     Name = "复制选中的音乐ID",
     Callback = function()
         local PureID = string.gsub(CurrentSoundId, "rbxassetid://", "")
         SetClipboard(PureID)
-        OrionLib:MakeNotification({
-            Name = "复制成功",
+        Rayfield:Notify({
+            Title = "复制成功",
             Content = "ID已复制: " .. PureID,
-            Time = 3
+            Duration = 3,
+            Image = 18270615016
         })
     end
 })
 
-Tab:AddTextbox({
+Tab:CreateInput({
     Name = "手动输入音频ID",
-    Default = "例如: 1845918434",
-    TextDisappear = true,
+    PlaceholderText = "例如: 1845918434",
     Callback = function(Value)
         CurrentSoundId = "rbxassetid://" .. Value
     end
 })
 
-Tab:AddTextbox({
+Tab:CreateInput({
     Name = "音量控制设置 (0-100)",
-    Default = "50",
-    TextDisappear = true,
+    PlaceholderText = "50",
     Callback = function(Value)
         local vol = tonumber(Value)
         if not vol then vol = 50 end
@@ -222,17 +229,18 @@ Tab:AddTextbox({
 })
 
 -- ==================== 播放控制区 ====================
-Tab:AddSection({ Name = "播放控制" })
+Tab:CreateSection("播放控制")
 
-Tab:AddButton({
+Tab:CreateButton({
     Name = "开始播放音乐",
     Callback = function()
         local pureId = string.gsub(CurrentSoundId, "rbxassetid://", "")
         if pureId == "0" then
-            OrionLib:MakeNotification({
-                Name = "错误",
+            Rayfield:Notify({
+                Title = "错误",
                 Content = "请先输入或选择有效的音频ID！",
-                Time = 3
+                Duration = 3,
+                Image = 18270615016
             })
             return
         end
@@ -241,7 +249,7 @@ Tab:AddButton({
     end
 })
 
-Tab:AddButton({
+Tab:CreateButton({
     Name = "重新播放音乐",
     Callback = function()
         if MusicSound then
@@ -251,7 +259,7 @@ Tab:AddButton({
     end
 })
 
-Tab:AddButton({
+Tab:CreateButton({
     Name = "停止播放音乐",
     Callback = function()
         if MusicSound then
@@ -262,7 +270,7 @@ Tab:AddButton({
     end
 })
 
-Tab:AddButton({
+Tab:CreateButton({
     Name = "继续播放音乐",
     Callback = function()
         if MusicSound then
@@ -275,16 +283,17 @@ Tab:AddButton({
     end
 })
 
-Tab:AddButton({
+Tab:CreateButton({
     Name = "播放/暂停切换",
     Callback = function()
         if not MusicSound then
             local pureId = string.gsub(CurrentSoundId, "rbxassetid://", "")
             if pureId == "0" then
-                OrionLib:MakeNotification({
-                    Name = "错误",
+                Rayfield:Notify({
+                    Title = "错误",
                     Content = "请先选择或输入有效音频ID",
-                    Time = 3
+                    Duration = 3,
+                    Image = 18270615016
                 })
                 return
             end
@@ -303,7 +312,7 @@ Tab:AddButton({
     end
 })
 
-Tab:AddButton({
+Tab:CreateButton({
     Name = "快进 +10秒",
     Callback = function()
         if MusicSound and MusicSound.TimeLength > 0 then
@@ -312,7 +321,7 @@ Tab:AddButton({
     end
 })
 
-Tab:AddButton({
+Tab:CreateButton({
     Name = "快退 -10秒",
     Callback = function()
         if MusicSound then
@@ -321,52 +330,55 @@ Tab:AddButton({
     end
 })
 
-Tab:AddButton({
+Tab:CreateButton({
     Name = "静音切换",
     Callback = function()
         IsMuted = not IsMuted
         if MusicSound then
             MusicSound.Volume = IsMuted and 0 or (CurrentVolume / 100)
         end
-        OrionLib:MakeNotification({
-            Name = "静音状态",
+        Rayfield:Notify({
+            Title = "静音状态",
             Content = IsMuted and "已静音" or "已取消静音",
-            Time = 2
+            Duration = 2,
+            Image = 18270615016
         })
     end
 })
 
-Tab:AddButton({
+Tab:CreateButton({
     Name = "音量 +10",
     Callback = function()
         CurrentVolume = math.min(100, CurrentVolume + 10)
         if not IsMuted and MusicSound then
             MusicSound.Volume = CurrentVolume / 100
         end
-        OrionLib:MakeNotification({
-            Name = "音量",
+        Rayfield:Notify({
+            Title = "音量",
             Content = "当前音量: " .. CurrentVolume,
-            Time = 2
+            Duration = 2,
+            Image = 18270615016
         })
     end
 })
 
-Tab:AddButton({
+Tab:CreateButton({
     Name = "音量 -10",
     Callback = function()
         CurrentVolume = math.max(0, CurrentVolume - 10)
         if not IsMuted and MusicSound then
             MusicSound.Volume = CurrentVolume / 100
         end
-        OrionLib:MakeNotification({
-            Name = "音量",
+        Rayfield:Notify({
+            Title = "音量",
             Content = "当前音量: " .. CurrentVolume,
-            Time = 2
+            Duration = 2,
+            Image = 18270615016
         })
     end
 })
 
-Tab:AddButton({
+Tab:CreateButton({
     Name = "显示当前状态",
     Callback = function()
         local pureId = string.gsub(CurrentSoundId, "rbxassetid://", "")
@@ -382,22 +394,23 @@ Tab:AddButton({
         if MusicSound and MusicSound.TimeLength > 0 then
             timeText = string.format(" [%d/%d秒]", MusicSound.TimePosition, MusicSound.TimeLength)
         end
-        OrionLib:MakeNotification({
-            Name = "当前状态",
+        Rayfield:Notify({
+            Title = "当前状态",
             Content = string.format("ID: %s\n状态: %s\n音量: %s\n循环: %s%s\n速度: %.1fx",
                 pureId, playing, volumeText, modeText, timeText, PlaybackSpeed),
-            Time = 5
+            Duration = 5,
+            Image = 18270615016
         })
     end
 })
 
 -- ==================== 循环模式与随机播放 ====================
-Tab:AddSection({ Name = "循环模式与随机" })
+Tab:CreateSection("循环模式与随机")
 
-Tab:AddDropdown({
+Tab:CreateDropdown({
     Name = "循环模式",
-    Default = "单曲循环",
     Options = {"单曲循环", "列表循环", "随机播放", "顺序播放"},
+    CurrentOption = "单曲循环",
     Callback = function(Value)
         LoopMode = (Value == "单曲循环") and "single"
                    or (Value == "列表循环") and "list"
@@ -406,29 +419,31 @@ Tab:AddDropdown({
         if MusicSound then
             MusicSound.Looped = (LoopMode == "single")
         end
-        OrionLib:MakeNotification({
-            Name = "循环模式",
+        Rayfield:Notify({
+            Title = "循环模式",
             Content = "已切换为: " .. Value,
-            Time = 2
+            Duration = 2,
+            Image = 18270615016
         })
     end
 })
 
-Tab:AddButton({
+Tab:CreateButton({
     Name = "随机播放一首（预置列表）",
     Callback = function()
         local randomId = MusicList[math.random(1, #MusicList)]
         ClearEndedConnection()
         PlaySoundById(randomId, LoopMode == "single")
-        OrionLib:MakeNotification({
-            Name = "随机播放",
+        Rayfield:Notify({
+            Title = "随机播放",
             Content = "正在播放: " .. randomId,
-            Time = 3
+            Duration = 3,
+            Image = 18270615016
         })
     end
 })
 
-Tab:AddButton({
+Tab:CreateButton({
     Name = "顺序播放预置列表",
     Callback = function()
         if #MusicList == 0 then return end
@@ -451,7 +466,7 @@ Tab:AddButton({
     end
 })
 
-Tab:AddButton({
+Tab:CreateButton({
     Name = "随机连续播放预置列表",
     Callback = function()
         ClearEndedConnection()
@@ -472,56 +487,61 @@ Tab:AddButton({
         EndedConnection = MusicSound.Ended:Connect(function()
             playRandom()
         end)
-        OrionLib:MakeNotification({
-            Name = "随机连续播放",
+        Rayfield:Notify({
+            Title = "随机连续播放",
             Content = "已开启，将随机播放预置列表中的音乐",
-            Time = 3
+            Duration = 3,
+            Image = 18270615016
         })
     end
 })
 
 -- ==================== 播放列表管理 ====================
-Tab:AddSection({ Name = "播放列表管理" })
+Tab:CreateSection("播放列表管理")
 
-Tab:AddButton({
+Tab:CreateButton({
     Name = "添加到播放列表",
     Callback = function()
         local pureId = string.gsub(CurrentSoundId, "rbxassetid://", "")
         if pureId == "0" then
-            OrionLib:MakeNotification({
-                Name = "错误",
+            Rayfield:Notify({
+                Title = "错误",
                 Content = "当前ID无效",
-                Time = 3
+                Duration = 3,
+                Image = 18270615016
             })
             return
         end
         for _, id in ipairs(CustomPlaylist) do
             if id == pureId then
-                OrionLib:MakeNotification({
-                    Name = "提示",
+                Rayfield:Notify({
+                    Title = "提示",
                     Content = "该ID已在播放列表中",
-                    Time = 2
+                    Duration = 2,
+                    Image = 18270615016
                 })
                 return
             end
         end
         table.insert(CustomPlaylist, pureId)
-        OrionLib:MakeNotification({
-            Name = "已添加",
+        Rayfield:Notify({
+            Title = "已添加",
             Content = "ID " .. pureId .. " 已加入播放列表，当前共 " .. #CustomPlaylist .. " 首",
-            Time = 3
+            Duration = 3,
+            Image = 18270615016
         })
     end
 })
 
-Tab:AddButton({
+Tab:CreateButton({
     Name = "播放自定义列表",
     Callback = function()
         if #CustomPlaylist == 0 then
-            OrionLib:MakeNotification({
-                Name = "错误",
+            Rayfield:Notify({
+                Title = "错误",
                 Content = "播放列表为空",
-                Time = 3
+                Duration = 3,
+                Image = 18270615016
             })
             return
         end
@@ -529,77 +549,84 @@ Tab:AddButton({
         ClearEndedConnection()
         PlaySoundById(CustomPlaylist[1], false)
         SetupPlaylistAutoNext()
-        OrionLib:MakeNotification({
-            Name = "播放列表",
+        Rayfield:Notify({
+            Title = "播放列表",
             Content = "开始播放自定义列表，共 " .. #CustomPlaylist .. " 首",
-            Time = 3
+            Duration = 3,
+            Image = 18270615016
         })
     end
 })
 
-Tab:AddButton({
+Tab:CreateButton({
     Name = "显示播放列表",
     Callback = function()
         if #CustomPlaylist == 0 then
-            OrionLib:MakeNotification({
-                Name = "播放列表",
+            Rayfield:Notify({
+                Title = "播放列表",
                 Content = "列表为空",
-                Time = 3
+                Duration = 3,
+                Image = 18270615016
             })
         else
             local listText = table.concat(CustomPlaylist, ", ")
-            OrionLib:MakeNotification({
-                Name = "播放列表 (" .. #CustomPlaylist .. " 首)",
+            Rayfield:Notify({
+                Title = "播放列表 (" .. #CustomPlaylist .. " 首)",
                 Content = listText,
-                Time = 5
+                Duration = 5,
+                Image = 18270615016
             })
         end
     end
 })
 
-Tab:AddButton({
+Tab:CreateButton({
     Name = "清空播放列表",
     Callback = function()
         CustomPlaylist = {}
         ClearEndedConnection()
-        OrionLib:MakeNotification({
-            Name = "已清空",
+        Rayfield:Notify({
+            Title = "已清空",
             Content = "播放列表已清空",
-            Time = 2
+            Duration = 2,
+            Image = 18270615016
         })
     end
 })
 
-Tab:AddButton({
+Tab:CreateButton({
     Name = "导出播放列表",
     Callback = function()
         if #CustomPlaylist == 0 then
-            OrionLib:MakeNotification({
-                Name = "错误",
+            Rayfield:Notify({
+                Title = "错误",
                 Content = "播放列表为空",
-                Time = 3
+                Duration = 3,
+                Image = 18270615016
             })
             return
         end
         local text = table.concat(CustomPlaylist, ",")
         SetClipboard(text)
-        OrionLib:MakeNotification({
-            Name = "导出成功",
+        Rayfield:Notify({
+            Title = "导出成功",
             Content = "播放列表已复制到剪贴板 (共 " .. #CustomPlaylist .. " 首)",
-            Time = 3
+            Duration = 3,
+            Image = 18270615016
         })
     end
 })
 
-Tab:AddButton({
+Tab:CreateButton({
     Name = "导入播放列表",
     Callback = function()
         local text = GetClipboard()
         if text == "" then
-            OrionLib:MakeNotification({
-                Name = "错误",
+            Rayfield:Notify({
+                Title = "错误",
                 Content = "剪贴板为空或无法读取",
-                Time = 3
+                Duration = 3,
+                Image = 18270615016
             })
             return
         end
@@ -611,221 +638,238 @@ Tab:AddButton({
             end
         end
         if #ids == 0 then
-            OrionLib:MakeNotification({
-                Name = "错误",
+            Rayfield:Notify({
+                Title = "错误",
                 Content = "剪贴板中没有有效的音频ID",
-                Time = 3
+                Duration = 3,
+                Image = 18270615016
             })
             return
         end
         CustomPlaylist = ids
-        OrionLib:MakeNotification({
-            Name = "导入成功",
+        Rayfield:Notify({
+            Title = "导入成功",
             Content = "已导入 " .. #CustomPlaylist .. " 首音乐到播放列表",
-            Time = 3
+            Duration = 3,
+            Image = 18270615016
         })
     end
 })
 
 -- ==================== 收藏夹 ====================
-Tab:AddSection({ Name = "收藏夹" })
+Tab:CreateSection("收藏夹")
 
-Tab:AddButton({
+Tab:CreateButton({
     Name = "添加到收藏夹",
     Callback = function()
         local pureId = string.gsub(CurrentSoundId, "rbxassetid://", "")
         if pureId == "0" then
-            OrionLib:MakeNotification({
-                Name = "错误",
+            Rayfield:Notify({
+                Title = "错误",
                 Content = "当前ID无效",
-                Time = 3
+                Duration = 3,
+                Image = 18270615016
             })
             return
         end
         for _, fav in ipairs(FavoriteList) do
             if fav == pureId then
-                OrionLib:MakeNotification({
-                    Name = "提示",
+                Rayfield:Notify({
+                    Title = "提示",
                     Content = "该ID已在收藏夹中",
-                    Time = 2
+                    Duration = 2,
+                    Image = 18270615016
                 })
                 return
             end
         end
         table.insert(FavoriteList, pureId)
-        OrionLib:MakeNotification({
-            Name = "已收藏",
+        Rayfield:Notify({
+            Title = "已收藏",
             Content = "ID " .. pureId .. " 已加入收藏夹",
-            Time = 3
+            Duration = 3,
+            Image = 18270615016
         })
     end
 })
 
-Tab:AddButton({
+Tab:CreateButton({
     Name = "从收藏夹移除当前ID",
     Callback = function()
         local pureId = string.gsub(CurrentSoundId, "rbxassetid://", "")
         for i, fav in ipairs(FavoriteList) do
             if fav == pureId then
                 table.remove(FavoriteList, i)
-                OrionLib:MakeNotification({
-                    Name = "已移除",
+                Rayfield:Notify({
+                    Title = "已移除",
                     Content = "ID " .. pureId .. " 已从收藏夹移除",
-                    Time = 3
+                    Duration = 3,
+                    Image = 18270615016
                 })
                 return
             end
         end
-        OrionLib:MakeNotification({
-            Name = "提示",
+        Rayfield:Notify({
+            Title = "提示",
             Content = "当前ID不在收藏夹中",
-            Time = 2
+            Duration = 2,
+            Image = 18270615016
         })
     end
 })
 
-Tab:AddButton({
+Tab:CreateButton({
     Name = "显示收藏夹",
     Callback = function()
         if #FavoriteList == 0 then
-            OrionLib:MakeNotification({
-                Name = "收藏夹",
+            Rayfield:Notify({
+                Title = "收藏夹",
                 Content = "收藏夹为空",
-                Time = 3
+                Duration = 3,
+                Image = 18270615016
             })
         else
             local text = table.concat(FavoriteList, ", ")
-            OrionLib:MakeNotification({
-                Name = "收藏夹 (" .. #FavoriteList .. " 首)",
+            Rayfield:Notify({
+                Title = "收藏夹 (" .. #FavoriteList .. " 首)",
                 Content = text,
-                Time = 5
+                Duration = 5,
+                Image = 18270615016
             })
         end
     end
 })
 
-Tab:AddButton({
+Tab:CreateButton({
     Name = "随机播放收藏",
     Callback = function()
         if #FavoriteList == 0 then
-            OrionLib:MakeNotification({
-                Name = "错误",
+            Rayfield:Notify({
+                Title = "错误",
                 Content = "收藏夹为空",
-                Time = 3
+                Duration = 3,
+                Image = 18270615016
             })
             return
         end
         local randomId = FavoriteList[math.random(1, #FavoriteList)]
         ClearEndedConnection()
         PlaySoundById(randomId, LoopMode == "single")
-        OrionLib:MakeNotification({
-            Name = "随机播放收藏",
+        Rayfield:Notify({
+            Title = "随机播放收藏",
             Content = "正在播放: " .. randomId,
-            Time = 3
+            Duration = 3,
+            Image = 18270615016
         })
     end
 })
 
-Tab:AddButton({
+Tab:CreateButton({
     Name = "播放收藏夹第一首",
     Callback = function()
         if #FavoriteList == 0 then
-            OrionLib:MakeNotification({
-                Name = "错误",
+            Rayfield:Notify({
+                Title = "错误",
                 Content = "收藏夹为空",
-                Time = 3
+                Duration = 3,
+                Image = 18270615016
             })
             return
         end
         ClearEndedConnection()
         PlaySoundById(FavoriteList[1], LoopMode == "single")
-        OrionLib:MakeNotification({
-            Name = "播放收藏",
+        Rayfield:Notify({
+            Title = "播放收藏",
             Content = "正在播放收藏夹第一首: " .. FavoriteList[1],
-            Time = 3
+            Duration = 3,
+            Image = 18270615016
         })
     end
 })
 
 -- ==================== 播放历史 ====================
-Tab:AddSection({ Name = "播放历史" })
+Tab:CreateSection("播放历史")
 
-Tab:AddButton({
+Tab:CreateButton({
     Name = "显示播放历史",
     Callback = function()
         if #HistoryList == 0 then
-            OrionLib:MakeNotification({
-                Name = "播放历史",
+            Rayfield:Notify({
+                Title = "播放历史",
                 Content = "暂无播放记录",
-                Time = 3
+                Duration = 3,
+                Image = 18270615016
             })
         else
             local text = table.concat(HistoryList, ", ")
-            OrionLib:MakeNotification({
-                Name = "播放历史 (最近10条)",
+            Rayfield:Notify({
+                Title = "播放历史 (最近10条)",
                 Content = text,
-                Time = 5
+                Duration = 5,
+                Image = 18270615016
             })
         end
     end
 })
 
-Tab:AddButton({
+Tab:CreateButton({
     Name = "播放历史第一首",
     Callback = function()
         if #HistoryList == 0 then
-            OrionLib:MakeNotification({
-                Name = "错误",
+            Rayfield:Notify({
+                Title = "错误",
                 Content = "暂无播放历史",
-                Time = 3
+                Duration = 3,
+                Image = 18270615016
             })
             return
         end
         ClearEndedConnection()
         PlaySoundById(HistoryList[1], LoopMode == "single")
-        OrionLib:MakeNotification({
-            Name = "播放历史",
+        Rayfield:Notify({
+            Title = "播放历史",
             Content = "正在播放: " .. HistoryList[1],
-            Time = 3
+            Duration = 3,
+            Image = 18270615016
         })
     end
 })
 
 -- ==================== 定时停止 ====================
-Tab:AddSection({ Name = "定时停止" })
+Tab:CreateSection("定时停止")
 
-Tab:AddTextbox({
+Tab:CreateInput({
     Name = "定时停止（秒）",
-    Default = "0 (关闭)",
-    TextDisappear = true,
+    PlaceholderText = "0 (关闭)",
     Callback = function(Value)
         local seconds = tonumber(Value)
         if seconds and seconds > 0 then
             SetAutoStop(seconds)
-            OrionLib:MakeNotification({
-                Name = "定时停止",
+            Rayfield:Notify({
+                Title = "定时停止",
                 Content = "将在 " .. seconds .. " 秒后自动停止",
-                Time = 3
+                Duration = 3,
+                Image = 18270615016
             })
         else
             CancelAutoStop()
-            OrionLib:MakeNotification({
-                Name = "定时停止",
+            Rayfield:Notify({
+                Title = "定时停止",
                 Content = "定时停止已关闭",
-                Time = 3
+                Duration = 3,
+                Image = 18270615016
             })
         end
     end
 })
 
 -- ==================== 播放速度控制 ====================
-Tab:AddSection({ Name = "播放速度" })
+Tab:CreateSection("播放速度")
 
-local speedOptions = {"0.5x", "1.0x", "1.5x", "2.0x"}
-Tab:AddDropdown({
+Tab:CreateDropdown({
     Name = "播放速度",
-    Default = "1.0x",
-    Options = speedOptions,
+    Options = {"0.5x", "1.0x", "1.5x", "2.0x"},
+    CurrentOption = "1.0x",
     Callback = function(Value)
         local speed = tonumber(string.gsub(Value, "x", ""))
         if speed and speed > 0 then
@@ -833,20 +877,20 @@ Tab:AddDropdown({
             if MusicSound then
                 MusicSound.PlaybackSpeed = speed
             end
-            OrionLib:MakeNotification({
-                Name = "播放速度",
+            Rayfield:Notify({
+                Title = "播放速度",
                 Content = "已设置为 " .. Value,
-                Time = 2
+                Duration = 2,
+                Image = 18270615016
             })
         end
     end
 })
 
 -- ==================== 跳转到指定时间 ====================
-Tab:AddTextbox({
+Tab:CreateInput({
     Name = "跳转到指定时间（秒）",
-    Default = "0",
-    TextDisappear = true,
+    PlaceholderText = "0",
     Callback = function(Value)
         local seconds = tonumber(Value)
         if seconds and MusicSound and MusicSound.TimeLength > 0 then
@@ -856,5 +900,5 @@ Tab:AddTextbox({
     end
 })
 
--- ==================== 初始化UI ====================
-OrionLib:Init()
+-- ==================== 初始化 ====================
+Rayfield:LoadNotification()
