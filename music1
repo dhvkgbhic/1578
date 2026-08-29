@@ -1,4 +1,4 @@
--- 加载你提供的UI库
+-- 加载UI库
 local OrionLib = loadstring(game:HttpGet("https://raw.githubusercontent.com/dhvkgbhic/1578/refs/heads/main/ui"))()
 local Window = OrionLib:MakeWindow({
     Name = "音乐播放器",
@@ -11,43 +11,121 @@ local Tab = Window:MakeTab({
     Icon = "rbxassetid://18270615016",
     PremiumOnly = false
 })
+
 -- 核心变量
 local MusicSound = nil
-local CurrentSoundId = "rbxassetid://0" 
-local CurrentVolume = 50 -- 默认音量设为50（对应0.5）
+local CurrentSoundId = "rbxassetid://0"
+local CurrentVolume = 50
 
---【第一波新增变量】
 local LoopEnabled = true
 local LastVolume = CurrentVolume
-
---【第二次新增变量】
 local PlaySpeed = 1
 local AutoRandomEnabled = false
 local AutoRandomDelay = 30
 local AutoRandomTask = nil
 local CurrentPlaylistIndex = 1
-
---【本次新增变量】
 local AutoNextOnEnd = false
 local FadeTime = 0.5
 
--- 预置的音乐ID列表
-local MusicList = {
-    "1845918434", 
+local CountDownTask = nil
+local GlobalGameVolume = 1
+local SoundParentMode = "SoundService"
+
+-- 默认预置歌单
+local DefaultMusicList = {
+    "1845918434",
     "1843463175",
     "1837844742",
     "1843497734",
     "1840172845",
     "1334940365"
 }
--- 音乐ID选择下拉菜单
-Tab:AddDropdown({
+local MusicList = OrionLib:GetConfig("SavedPlaylist") or DefaultMusicList
+
+--====================【播放按钮放到整个Tab最顶部】====================
+Tab:AddButton({
+    Name = "开始播放音乐",
+    Callback = function()
+        if CurrentSoundId == "rbxassetid://0" then
+            OrionLib:MakeNotification({
+                Name = "错误",
+                Content = "请先输入或选择有效的音频ID！",
+                Time = 3
+            })
+            return
+        end
+        if not MusicSound then
+            local targetParent
+            if SoundParentMode == "Head" then
+                local plr = game.Players.LocalPlayer
+                local char = plr.Character or plr.CharacterAdded:Wait()
+                targetParent = char:WaitForChild("Head")
+            else
+                targetParent = game:GetService("SoundService")
+            end
+            MusicSound = Instance.new("Sound")
+            MusicSound.Name = "PlayerMusic"
+            MusicSound.Parent = targetParent
+            if SoundParentMode == "Head" then
+                MusicSound.RollOffMode = Enum.RollOffMode.InverseTapered
+                MusicSound.RollOffMaxDistance = 60
+            end
+            MusicSound.Looped = LoopEnabled
+            MusicSound.Volume = CurrentVolume / 100
+            MusicSound.PlaybackSpeed = PlaySpeed
+            pcall(function()
+                MusicSound.Ended:Connect(function()
+                    if AutoNextOnEnd and not LoopEnabled then
+                        CurrentPlaylistIndex +=1
+                        if CurrentPlaylistIndex>#MusicList then CurrentPlaylistIndex=1 end
+                        local selId = MusicList[CurrentPlaylistIndex]
+                        CurrentSoundId = "rbxassetid://"..selId
+                        MusicSound.SoundId = CurrentSoundId
+                        MusicSound:Play()
+                    end
+                end)
+            end)
+        end
+        MusicSound.SoundId = CurrentSoundId
+        pcall(function() MusicSound:Play() end)
+    end
+})
+
+Tab:AddButton({
+    Name = "重新播放音乐",
+    Callback = function()
+        if MusicSound then
+            MusicSound:Stop()
+            MusicSound:Play()
+        end
+    end
+})
+
+Tab:AddButton({
+    Name = "停止播放音乐",
+    Callback = function()
+        if MusicSound then
+            MusicSound:Stop()
+        end
+    end
+})
+
+Tab:AddButton({
+    Name = "继续播放音乐",
+    Callback = function()
+        if MusicSound then
+            MusicSound:Resume()
+        end
+    end
+})
+--====================================================================
+
+local MusicIdDropdown = Tab:AddDropdown({
     Name = "选择音乐ID",
-    Default = "1845918434",
+    Default = MusicList[1],
     Options = MusicList,
     Callback = function(Value)
         CurrentSoundId = "rbxassetid://" .. Value
-        -- 更新列表索引
         for i,v in ipairs(MusicList) do
             if v == Value then CurrentPlaylistIndex = i end
         end
@@ -58,7 +136,78 @@ Tab:AddDropdown({
         })
     end
 })
--- 复制选中的ID
+
+--歌单操作，放在下拉框下方
+Tab:AddButton({
+    Name = "🔄刷新歌单下拉列表",
+    Callback = function()
+        MusicIdDropdown:Refresh(MusicList, true)
+        OrionLib:MakeNotification({Name="刷新完成",Content="下拉歌单已更新",Time=2})
+    end
+})
+
+Tab:AddButton({
+    Name = "💾保存完整歌单到配置",
+    Callback = function()
+        OrionLib:SetConfig("SavedPlaylist", MusicList)
+        OrionLib:SaveConfig()
+        MusicIdDropdown:Refresh(MusicList, true)
+        OrionLib:MakeNotification({
+            Name = "歌单已保存",
+            Content = "当前全部歌单存入配置，重启脚本自动加载",
+            Time = 3
+        })
+    end
+})
+
+Tab:AddButton({
+    Name = "📂从配置加载已保存歌单",
+    Callback = function()
+        local saved = OrionLib:GetConfig("SavedPlaylist")
+        if not saved or #saved == 0 then
+            OrionLib:MakeNotification({Name="提示",Content="配置中没有保存的歌单",Time=3})
+            return
+        end
+        MusicList = saved
+        CurrentPlaylistIndex = 1
+        MusicIdDropdown:Refresh(MusicList, true)
+        OrionLib:MakeNotification({
+            Name = "加载完成",
+            Content = string.format("读取歌单，共 %d 首",#MusicList),
+            Time = 3
+        })
+    end
+})
+
+Tab:AddButton({
+    Name = "🗑删除当前选中歌单项",
+    Callback = function()
+        if #MusicList <=1 then
+            OrionLib:MakeNotification({Name="禁止删除",Content="歌单至少保留1首",Time=2})
+            return
+        end
+        table.remove(MusicList,CurrentPlaylistIndex)
+        if CurrentPlaylistIndex > #MusicList then CurrentPlaylistIndex = #MusicList end
+        CurrentSoundId = "rbxassetid://"..MusicList[CurrentPlaylistIndex]
+        MusicIdDropdown:Refresh(MusicList,true)
+        OrionLib:MakeNotification({Name="已删除",Content="移除选中歌曲，剩余："..#MusicList.."首",Time=2})
+    end
+})
+
+Tab:AddButton({
+    Name = "🔀打乱整个歌单顺序",
+    Callback = function()
+        for i = #MusicList, 2, -1 do
+            local j = math.random(i)
+            MusicList[i], MusicList[j] = MusicList[j], MusicList[i]
+        end
+        CurrentPlaylistIndex = 1
+        CurrentSoundId = "rbxassetid://"..MusicList[1]
+        MusicIdDropdown:Refresh(MusicList,true)
+        OrionLib:MakeNotification({Name="歌单已打乱",Content="全部歌曲顺序随机重排",Time=2})
+    end
+})
+
 Tab:AddButton({
     Name = "复制选中的音乐ID",
     Callback = function()
@@ -73,7 +222,7 @@ Tab:AddButton({
         })
     end
 })
--- 手动输入音频ID
+
 Tab:AddTextbox({
     Name = "手动输入音频ID",
     Default = "例如: 1845918434",
@@ -82,51 +231,34 @@ Tab:AddTextbox({
         CurrentSoundId = "rbxassetid://" .. Value
     end
 })
--- ==========================================
--- 音量控制设置
--- ==========================================
+
 Tab:AddTextbox({
     Name = "音量控制设置 (0-100)",
     Default = "50",
     TextDisappear = true,
     Callback = function(Value)
-        -- 把文本转换成数字，防止输入文字报错
         local vol = tonumber(Value)
-        if not vol then 
-            vol = 50 -- 如果输入的不是数字，就恢复默认
-        end
-        
-        -- 限制音量范围在 0 到 100 之间
+        if not vol then vol = 50 end
         if vol > 100 then vol = 100 end
         if vol < 0 then vol = 0 end
-        
         CurrentVolume = vol
-        
-        -- 实时应用音量（除以100转换为Roblox的0-1）
         if MusicSound then
-            pcall(function()
-                MusicSound.Volume = CurrentVolume / 100
-            end)
+            pcall(function() MusicSound.Volume = CurrentVolume / 100 end)
         end
     end
 })
 
---====================【第一波新增功能】====================
---循环播放开关
 Tab:AddToggle({
     Name = "循环播放",
     Default = true,
     Callback = function(State)
         LoopEnabled = State
         if MusicSound then
-            pcall(function()
-                MusicSound.Looped = LoopEnabled
-            end)
+            pcall(function() MusicSound.Looped = LoopEnabled end)
         end
     end
 })
 
---随机播放预置音乐
 Tab:AddButton({
     Name = "🎲随机播放预置音乐",
     Callback = function()
@@ -146,7 +278,6 @@ Tab:AddButton({
     end
 })
 
---静音/恢复音量
 Tab:AddButton({
     Name = "🔇静音 / 恢复音量",
     Callback = function()
@@ -157,9 +288,7 @@ Tab:AddButton({
         else
             CurrentVolume = LastVolume
         end
-        pcall(function()
-            MusicSound.Volume = CurrentVolume / 100
-        end)
+        pcall(function() MusicSound.Volume = CurrentVolume / 100 end)
         OrionLib:MakeNotification({
             Name = CurrentVolume == 0 and "✅已静音" or "✅音量恢复",
             Content = "当前音量："..CurrentVolume,
@@ -168,7 +297,6 @@ Tab:AddButton({
     end
 })
 
---跳转播放位置（秒）
 Tab:AddTextbox({
     Name = "⏱跳转播放位置(秒)",
     Default = "0",
@@ -176,9 +304,7 @@ Tab:AddTextbox({
     Callback = function(Val)
         local JumpSec = tonumber(Val)
         if not JumpSec or not MusicSound then return end
-        pcall(function()
-            MusicSound.TimePosition = JumpSec
-        end)
+        pcall(function() MusicSound.TimePosition = JumpSec end)
         OrionLib:MakeNotification({
             Name = "跳转完成",
             Content = "跳至 "..JumpSec.." 秒",
@@ -187,12 +313,11 @@ Tab:AddTextbox({
     end
 })
 
---彻底销毁音频实例
 Tab:AddButton({
     Name = "🗑彻底销毁音频对象",
     Callback = function()
-        --关闭自动任务
         if AutoRandomTask then task.cancel(AutoRandomTask) AutoRandomTask = nil end
+        if CountDownTask then task.cancel(CountDownTask) CountDownTask = nil end
         AutoRandomEnabled = false
         if MusicSound then
             pcall(function()
@@ -209,7 +334,6 @@ Tab:AddButton({
     end
 })
 
---查看当前播放信息
 Tab:AddButton({
     Name = "ℹ查看当前播放信息",
     Callback = function()
@@ -231,8 +355,6 @@ Tab:AddButton({
     end
 })
 
---====================【第二次新增全部功能】====================
---播放速度调节
 Tab:AddTextbox({
     Name = "⏩播放速度(0.5‑2)",
     Default = "1",
@@ -250,7 +372,6 @@ Tab:AddTextbox({
     end
 })
 
---上一首
 Tab:AddButton({
     Name = "⏮上一首",
     Callback = function()
@@ -266,7 +387,6 @@ Tab:AddButton({
     end
 })
 
---下一首
 Tab:AddButton({
     Name = "⏭下一首",
     Callback = function()
@@ -282,7 +402,6 @@ Tab:AddButton({
     end
 })
 
---添加ID到预置歌单
 Tab:AddTextbox({
     Name = "➕添加ID到歌单",
     Default = "输入数字ID",
@@ -291,28 +410,23 @@ Tab:AddTextbox({
         local id = string.gsub(val,"%s","")
         if #id <3 then return end
         table.insert(MusicList,id)
+        MusicIdDropdown:Refresh(MusicList, true)
         OrionLib:MakeNotification({Name="添加成功",Content="已加入歌单 ID:"..id,Time=2})
     end
 })
 
---清空自定义歌单
 Tab:AddButton({
-    Name = "🧹清空自定义歌单",
+    Name = "🧹重置歌单(恢复默认)",
     Callback = function()
-        MusicList = {
-            "1845918434", 
-            "1843463175",
-            "1837844742",
-            "1843497734",
-            "1840172845",
-            "1334940365"
-        }
+        MusicList = DefaultMusicList
         CurrentPlaylistIndex = 1
-        OrionLib:MakeNotification({Name="已重置歌单",Content="恢复原始预置列表",Time=3})
+        OrionLib:SetConfig("SavedPlaylist",MusicList)
+        OrionLib:SaveConfig()
+        MusicIdDropdown:Refresh(MusicList, true)
+        OrionLib:MakeNotification({Name="已重置歌单",Content="恢复原始预置列表，配置同步更新",Time=3})
     end
 })
 
---设置自动切歌间隔秒数
 Tab:AddTextbox({
     Name = "🔁自动切歌间隔(秒)",
     Default = "30",
@@ -323,7 +437,6 @@ Tab:AddTextbox({
     end
 })
 
---自动随机切歌开关
 Tab:AddToggle({
     Name = "🔁开启自动随机切歌",
     Default = false,
@@ -352,7 +465,6 @@ Tab:AddToggle({
     end
 })
 
---获取音频总时长
 Tab:AddButton({
     Name = "⏳获取歌曲总时长",
     Callback = function()
@@ -369,31 +481,14 @@ Tab:AddButton({
     end
 })
 
---====================【本次新增功能】====================
---歌曲结束自动下一首开关
 Tab:AddToggle({
     Name = "✨歌曲结束自动下一首",
     Default = false,
     Callback = function(state)
         AutoNextOnEnd = state
-        if MusicSound and state then
-            pcall(function()
-                MusicSound.Ended:Connect(function()
-                    if AutoNextOnEnd and not LoopEnabled then
-                        CurrentPlaylistIndex +=1
-                        if CurrentPlaylistIndex>#MusicList then CurrentPlaylistIndex=1 end
-                        local selId = MusicList[CurrentPlaylistIndex]
-                        CurrentSoundId = "rbxassetid://"..selId
-                        MusicSound.SoundId = CurrentSoundId
-                        MusicSound:Play()
-                    end
-                end)
-            end)
-        end
     end
 })
 
---音量淡入淡出
 Tab:AddButton({
     Name = "🌫音量淡入淡出切换",
     Callback = function()
@@ -412,7 +507,6 @@ Tab:AddButton({
     end
 })
 
---导出歌单复制到剪贴板
 Tab:AddButton({
     Name = "📤导出歌单(复制全部ID)",
     Callback = function()
@@ -422,7 +516,6 @@ Tab:AddButton({
     end
 })
 
---导入歌单
 Tab:AddTextbox({
     Name = "📥导入歌单(换行分隔ID)",
     Default = "粘贴多行ID",
@@ -434,11 +527,11 @@ Tab:AddTextbox({
                 table.insert(MusicList,id)
             end
         end
+        MusicIdDropdown:Refresh(MusicList, true)
         OrionLib:MakeNotification({Name="导入完成",Content="已批量添加ID进歌单",Time=3})
     end
 })
 
---打印完整歌单
 Tab:AddButton({
     Name = "🧾显示全部歌单",
     Callback = function()
@@ -451,18 +544,17 @@ Tab:AddButton({
     end
 })
 
---一键全部停止+关闭自动切歌
 Tab:AddButton({
     Name = "🛑全部停止&关闭自动切歌",
     Callback = function()
         AutoRandomEnabled = false
         if AutoRandomTask then task.cancel(AutoRandomTask) AutoRandomTask=nil end
+        if CountDownTask then task.cancel(CountDownTask) CountDownTask = nil end
         if MusicSound then pcall(function() MusicSound:Stop() end) end
-        OrionLib:MakeNotification({Name="总控停止",Content="已停止播放，关闭自动切歌",Time=2})
+        OrionLib:MakeNotification({Name="总控停止",Content="已停止播放，关闭自动切歌&倒计时",Time=2})
     end
 })
 
---保存当前ID到Orion配置
 Tab:AddButton({
     Name = "📌保存当前ID到配置",
     Callback = function()
@@ -472,76 +564,118 @@ Tab:AddButton({
         OrionLib:MakeNotification({Name="配置已保存",Content="保存ID: "..pure,Time=2})
     end
 })
---====================【新增结束】====================
 
--- 开始播放
-Tab:AddButton({
-    Name = "开始播放音乐",
-    Callback = function()
-        if CurrentSoundId == "rbxassetid://0" then
-            OrionLib:MakeNotification({
-                Name = "错误",
-                Content = "请先输入或选择有效的音频ID！",
-                Time = 3
-            })
+Tab:AddTextbox({
+    Name = "⏲倒计时停止(分钟，0关闭)",
+    Default = "0",
+    TextDisappear = true,
+    Callback = function(val)
+        local min = tonumber(val)
+        if CountDownTask then task.cancel(CountDownTask) CountDownTask = nil end
+        if not min or min <=0 then
+            OrionLib:MakeNotification({Name="倒计时关闭",Content="不会自动停止",Time=2})
             return
         end
-        
-        if not MusicSound then
-            MusicSound = Instance.new("Sound")
-            MusicSound.Name = "PlayerMusic"
-            MusicSound.Parent = game:GetService("SoundService")
-            MusicSound.Looped = LoopEnabled
-            MusicSound.Volume = CurrentVolume / 100
-            MusicSound.PlaybackSpeed = PlaySpeed
-            --绑定结束事件
-            pcall(function()
-                MusicSound.Ended:Connect(function()
-                    if AutoNextOnEnd and not LoopEnabled then
-                        CurrentPlaylistIndex +=1
-                        if CurrentPlaylistIndex>#MusicList then CurrentPlaylistIndex=1 end
-                        local selId = MusicList[CurrentPlaylistIndex]
-                        CurrentSoundId = "rbxassetid://"..selId
-                        MusicSound.SoundId = CurrentSoundId
-                        MusicSound:Play()
-                    end
-                end)
-            end)
-        end
-        
-        MusicSound.SoundId = CurrentSoundId
-        pcall(function()
-            MusicSound:Play()
+        local waitSec = min * 60
+        OrionLib:MakeNotification({Name="倒计时启动",Content=string.format("%.1f分钟后自动停止播放",min),Time=3})
+        CountDownTask = task.spawn(function()
+            task.wait(waitSec)
+            if MusicSound then pcall(function() MusicSound:Stop() end) end
+            OrionLib:MakeNotification({Name="倒计时结束",Content="时间到，已停止音乐",Time=3})
         end)
     end
 })
--- 重新播放
+
+Tab:AddTextbox({
+    Name = "🎚游戏全局音量(0‑100)",
+    Default = "100",
+    TextDisappear = true,
+    Callback = function(val)
+        local gVol = tonumber(val)
+        if not gVol then gVol=100 end
+        if gVol<0 then gVol=0 end
+        if gVol>100 then gVol=100 end
+        GlobalGameVolume = gVol / 100
+        game:GetService("SoundService").Volume = GlobalGameVolume
+        OrionLib:MakeNotification({Name="全局音量",Content="设置为："..gVol.."%",Time=2})
+    end
+})
+
+Tab:AddDropdown({
+    Name = "🔊音频播放位置",
+    Default = "SoundService(全局)",
+    Options = {"SoundService(全局)","角色头部(3D音效)"},
+    Callback = function(val)
+        if val == "SoundService(全局)" then
+            SoundParentMode = "SoundService"
+            if MusicSound then
+                pcall(function() MusicSound.Parent = game:GetService("SoundService") end)
+            end
+        else
+            SoundParentMode = "Head"
+            local plr = game.Players.LocalPlayer
+            local char = plr.Character or plr.CharacterAdded:Wait()
+            local head = char:WaitForChild("Head")
+            if MusicSound then
+                pcall(function()
+                    MusicSound.Parent = head
+                    MusicSound.RollOffMode = Enum.RollOffMode.InverseTapered
+                    MusicSound.RollOffMaxDistance = 60
+                end)
+            end
+        end
+        OrionLib:MakeNotification({Name="切换播放位置",Content=val,Time=2})
+    end
+})
+
 Tab:AddButton({
-    Name = "重新播放音乐",
+    Name = "🧪测试当前ID是否有效",
     Callback = function()
-        if MusicSound then
-            MusicSound:Stop()
-            MusicSound:Play()
+        local pureId = string.gsub(CurrentSoundId,"rbxassetid://","")
+        if pureId == "0" then
+            OrionLib:MakeNotification({Name="错误",Content="请先选择音频ID",Time=2})
+            return
+        end
+        local tempSound = Instance.new("Sound")
+        tempSound.SoundId = "rbxassetid://"..pureId
+        local loaded = false
+        tempSound.Loaded:Connect(function() loaded = true end)
+        task.wait(2.2)
+        tempSound:Destroy()
+        if loaded then
+            OrionLib:MakeNotification({Name="✅ID有效",Content="音频资源加载成功",Time=3})
+        else
+            OrionLib:MakeNotification({Name="❌ID无效",Content="无法加载音频，ID错误/版权限制",Time=3})
         end
     end
 })
--- 停止播放
+
 Tab:AddButton({
-    Name = "停止播放音乐",
+    Name = "📋复制完整播放信息",
     Callback = function()
-        if MusicSound then
-            MusicSound:Stop()
-        end
+        local pureId = string.gsub(CurrentSoundId,"rbxassetid://","")
+        local infoStr = string.format(
+"音乐播放器信息:\nID:%s\n播放器音量:%d\n倍速:%.1f\n循环:%s\n播放位置:%s",
+pureId,CurrentVolume,PlaySpeed,tostring(LoopEnabled),SoundParentMode)
+        pcall(function() game:GetService("GuiService"):SetClipboard(infoStr) end)
+        OrionLib:MakeNotification({Name="已复制",Content="完整播放信息复制剪贴板",Time=2})
     end
 })
--- 继续播放
+
 Tab:AddButton({
-    Name = "继续播放音乐",
+    Name = "🔁重置播放器设置(保留歌单)",
     Callback = function()
-        if MusicSound then
-            MusicSound:Resume()
-        end
+        CurrentVolume = 50
+        LastVolume = 50
+        PlaySpeed = 1
+        LoopEnabled = true
+        AutoNextOnEnd = false
+        AutoRandomEnabled = false
+        if AutoRandomTask then task.cancel(AutoRandomTask) AutoRandomTask=nil end
+        if CountDownTask then task.cancel(CountDownTask) CountDownTask=nil end
+        game:GetService("SoundService").Volume = 1
+        OrionLib:MakeNotification({Name="设置已重置",Content="音量、倍速、开关恢复默认，歌单保留",Time=3})
     end
 })
--- 初始化UI
+
 OrionLib:Init()
