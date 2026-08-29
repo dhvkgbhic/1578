@@ -660,3 +660,70 @@ Tab:AddToggle({
         end
     end
 })
+local Tab = Window:MakeTab({
+    Name = "mm2训练营FFA模式",
+        Icon = "rbxassetid://18270615016",
+        PremiumOnly = false
+})
+
+Tab:AddToggle({
+    Name = "自动挥刀",
+    Default = false,
+    Callback = function(Value)
+        if Value then
+            runLoop = task.spawn(function()
+                while task.wait(0.4) do
+                    local char = game:GetService("Players").LocalPlayer.Character
+                    if char then
+                        pcall(function()
+                            char:WaitForChild("Knife"):WaitForChild("KnifeServer"):WaitForChild("SlashStart"):FireServer()
+                        end)
+                    end
+                end
+            end)
+        else
+            if runLoop then
+                task.cancel(runLoop)
+                runLoop = nil
+            end
+        end
+    end
+})
+
+Tab:AddToggle({
+    Name = "循环传送全部玩家",
+    Default = false,
+    Callback = function(Value)
+        if Value then
+            runLoop = task.spawn(function()
+                local Players = game:GetService("Players")
+                local localPlr = Players.LocalPlayer
+                while task.wait(2.5) do
+                    local targetPlayers = {}
+                    --收集除自己以外所有在线玩家
+                    for _,plr in ipairs(Players:GetPlayers()) do
+                        if plr ~= localPlr and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
+                            table.insert(targetPlayers, plr)
+                        end
+                    end
+                    if #targetPlayers == 0 then continue end
+                    
+                    for _,targetPlr in ipairs(targetPlayers) do
+                        pcall(function()
+                            local myChar = localPlr.Character
+                            if myChar and myChar:FindFirstChild("HumanoidRootPart") and targetPlr.Character and targetPlr.Character.HumanoidRootPart then
+                                myChar.HumanoidRootPart.CFrame = targetPlr.Character.HumanoidRootPart.CFrame + Vector3.new(0,3,0)
+                            end
+                        end)
+                        task.wait(1) --间隔1秒传送到下一位玩家
+                    end
+                end
+            end)
+        else
+            if runLoop then
+                task.cancel(runLoop)
+                runLoop = nil
+            end
+        end
+    end
+})
