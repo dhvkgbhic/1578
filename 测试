@@ -167,63 +167,64 @@ Tab:AddToggle({
     end
 })
 
-local hitboxLoop = nil
-local visualBox = nil
+local HitboxEnabled = false
+local HitboxVisuals = {} -- 用于记录创建的红框，方便关闭时清理
 
 Tab:AddToggle({
-    Name = "扩大Hitbox",
+    Name = "扩大Hitbox（半透明）",
     Default = false,
     Callback = function(Value)
-        if Value then
-            hitboxLoop = task.spawn(function()
-                local LocalPlayer = game:GetService("Players").LocalPlayer
-                local hitboxSize = 6 -- 修改这个调整方框大小
-                local model = Instance.new("Model")
-                model.Name = "AttackHitboxVisual"
-                local half = hitboxSize / 2
-                local faces = {
-                    {sz = Vector3.new(hitboxSize, hitboxSize, 0.1), pos = Vector3.new(0,0,half)},
-                    {sz = Vector3.new(hitboxSize, hitboxSize, 0.1), pos = Vector3.new(0,0,-half)},
-                    {sz = Vector3.new(hitboxSize, 0.1, hitboxSize), pos = Vector3.new(0,half,0)},
-                    {sz = Vector3.new(hitboxSize, 0.1, hitboxSize), pos = Vector3.new(0,-half,0)},
-                    {sz = Vector3.new(0.1, hitboxSize, hitboxSize), pos = Vector3.new(half,0,0)},
-                    {sz = Vector3.new(0.1, hitboxSize, hitboxSize), pos = Vector3.new(-half,0,0)},
-                }
-                for _,data in ipairs(faces) do
-                    local p = Instance.new("Part")
-                    p.Anchored = true
-                    p.CanCollide = false
-                    p.Transparency = 0.76
-                    p.BrickColor = BrickColor.Red()
-                    p.Material = Enum.Material.SmoothPlastic
-                    p.Size = data.sz
-                    p.CFrame = CFrame.new(data.pos)
-                    p.Parent = model
-                end
-                visualBox = model
-                visualBox.Parent = workspace
-
-                while true do
-                    task.wait(0.1)
-                    local char = LocalPlayer.Character
-                    if not char then continue end
-                    local root = char:FindFirstChild("HumanoidRootPart")
-                    if not root then continue end
-                    visualBox:SetPrimaryPartCFrame(CFrame.new(root.Position))
-                end
-            end)
-        else
-            if hitboxLoop then
-                task.cancel(hitboxLoop)
-                hitboxLoop = nil
+        HitboxEnabled = Value
+        
+        -- 如果关闭开关，立刻销毁所有生成的红框
+        if not Value then
+            for _, part in pairs(HitboxVisuals) do
+                if part and part.Parent then part:Destroy() end
             end
-            if visualBox then
-                pcall(function() visualBox:Destroy() end)
-                visualBox = nil
-            end
+            table.clear(HitboxVisuals)
         end
     end
 })
+
+-- 后台主循环（每3秒刷新一次）
+task.spawn(function()
+    local Players = game:GetService("Players")
+    local LocalPlayer = Players.LocalPlayer
+    
+    while true do
+        task.wait(3) -- 每3秒刷新玩家列表
+        
+        if HitboxEnabled then
+            for _, player in pairs(Players:GetPlayers()) do
+                -- 排除自己
+                if player ~= LocalPlayer and player.Character then
+                    local HRP = player.Character:FindFirstChild("HumanoidRootPart")
+                    if HRP then
+                        -- 检查是否已经有红框
+                        local Visual = HRP:FindFirstChild("HitboxVisual")
+                        if not Visual then
+                            Visual = Instance.new("Part")
+                            Visual.Name = "HitboxVisual"
+                            Visual.Anchored = false
+                            Visual.CanCollide = false
+                            Visual.Transparency = 0.5 -- 半透明
+                            Visual.BrickColor = BrickColor.new("Really red") -- 红色
+                            Visual.Material = Enum.Material.Neon
+                            Visual.Size = Vector3.new(10, 10, 10) -- 扩大后的尺寸
+                            Visual.Parent = HRP
+                            
+                            -- 添加到清理列表中
+                            table.insert(HitboxVisuals, Visual)
+                        end
+                        
+                        -- 每帧更新位置，让红框完美跟随对方
+                        Visual.CFrame = HRP.CFrame
+                    end
+                end
+            end
+        end
+    end
+end)
 Tab:AddToggle({
     Name = "穿墙",
     Default = false,
