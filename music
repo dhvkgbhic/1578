@@ -9,7 +9,7 @@ local Window = OrionLib:MakeWindow({
 })
 
 local Tab = Window:MakeTab({
-    Name = "音乐控制",
+    Name = "音乐",
     Icon = "rbxassetid://18270615016",
     PremiumOnly = false
 })
@@ -27,6 +27,9 @@ local MusicList = {
     "1843497734",
     "1840172845",
     "1334940365"
+    "77715601943266"
+    "16831108393"
+    "107797507930019"
 }
 
 -- 音乐ID选择下拉菜单
@@ -61,13 +64,15 @@ Tab:AddButton({
 })
 
 local Section = Tab:AddSection({
-        Name = "好听↓"
+        Name = "好听的有777...开头
+168...开头
+107...开头"
 })
 
 
 Tab:AddButton({
 
-        Name = "复制一个好听的",
+        Name = "phoenix",
 
         Callback = function()
 
@@ -76,6 +81,7 @@ Tab:AddButton({
           end
 
 })
+
 
 local Section = Tab:AddSection({
         Name = "好听↑"
