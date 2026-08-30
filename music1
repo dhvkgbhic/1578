@@ -1,5 +1,5 @@
 -- 加载 WindUI 库
-local WindUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/Footagesus/WindUI/main/main.lua"))()
+local WindUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/Footagesus/WindUI/refs/heads/main/main.client.lua"))()
 
 -- 创建窗口
 local Window = WindUI:CreateWindow({
