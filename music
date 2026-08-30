@@ -435,6 +435,14 @@ Tab:AddButton({
         loadstring(game:HttpGet("https://raw.githubusercontent.com/dhvkgbhic/1578/main/tongyu"))()
           end
 })
+Tab:AddButton({
+    Name = "切换wind ui",
+        Callback = function()
+
+loadstring(game:HttpGet("https://raw.githubusercontent.com/dhvkgbhic/1578/refs/heads/main/music1"))()
+  end
+})
+
 
 
 -- 初始化UI
