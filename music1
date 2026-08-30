@@ -1,7 +1,6 @@
 -- =============================================
 -- WindUI 音乐播放器（含更多标签页）
 -- =============================================
-WindUI:Notify({ Title = "加载成功", Content = "ID: "..id, Duration = 3 })
 local RunService = game:GetService("RunService")
 local cloneref = (cloneref or clonereference or function(instance)
     return instance
@@ -33,7 +32,7 @@ local Window = WindUI:CreateWindow({
     Theme = "Dark",
     HideSearchBar = false,
     OpenButton = {
-        Title = "打开音乐播放器",
+        Title = "音乐播放器",
         CornerRadius = UDim.new(1, 0),
         StrokeThickness = 3,
         Enabled = true,
