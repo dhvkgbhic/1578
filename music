@@ -1,5 +1,27 @@
--- 加载 WindUI（使用正确的 dist 链接）
-local WindUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/Footagesus/WindUI/main/dist/main.lua"))()
+-- =============================================
+-- WindUI 音乐播放器（基于官方示例 API）
+-- =============================================
+local RunService = game:GetService("RunService")
+local cloneref = (cloneref or clonereference or function(instance)
+    return instance
+end)
+local ReplicatedStorage = cloneref(game:GetService("ReplicatedStorage"))
+
+local WindUI
+do
+    local ok, result = pcall(function()
+        return require("./src/Init")
+    end)
+    if ok then
+        WindUI = result
+    else
+        if cloneref(game:GetService("RunService")):IsStudio() then
+            WindUI = require(cloneref(ReplicatedStorage:WaitForChild("WindUI"):WaitForChild("Init")))
+        else
+            WindUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/Footagesus/WindUI/main/dist/main.lua"))()
+        end
+    end
+end
 
 -- 创建窗口
 local Window = WindUI:CreateWindow({
@@ -8,6 +30,19 @@ local Window = WindUI:CreateWindow({
     Icon = "music",
     Size = UDim2.fromOffset(620, 520),
     Theme = "Dark",
+    HideSearchBar = false,
+    OpenButton = {
+        Title = "打开音乐播放器",
+        CornerRadius = UDim.new(1, 0),
+        StrokeThickness = 3,
+        Enabled = true,
+        Draggable = true,
+        OnlyMobile = false,
+        Color = ColorSequence.new(
+            Color3.fromHex("#30FF6A"),
+            Color3.fromHex("#e7ff2f")
+        ),
+    },
 })
 
 -- 核心变量（与原脚本一致，已修正语法）
@@ -61,12 +96,12 @@ local MusicList = {
     "1334940365"
 }
 
--- 创建标签页（使用 Window:Tab 直接创建，结构更简单）
+-- 创建标签页（使用 Window:Tab）
 local PlayTab = Window:Tab({ Title = "播放", Icon = "music" })
 local PlaylistTab = Window:Tab({ Title = "歌单", Icon = "list-music" })
 local AdvancedTab = Window:Tab({ Title = "高级", Icon = "settings" })
 
--- 辅助函数：更新当前ID显示（使用 Paragraph）
+-- 当前ID显示（使用 Paragraph）
 local CurrentIdParagraph = PlayTab:Paragraph({
     Title = "当前选中ID",
     Desc = "1845918434"
@@ -378,7 +413,7 @@ end})
 AdvancedTab:Input({
     Title = "导入歌词(支持[分:秒])",
     Placeholder = "每行一句歌词，或[00:10]歌词",
-    Type = "Textarea",  -- 使用多行输入
+    Type = "Textarea",
     Callback = function(text)
         LyricsTable = {}
         LyricsIsTimestamped = false
@@ -458,5 +493,4 @@ AdvancedTab:Button({ Title = "全部停止", Icon = "octagon", Callback = functi
     if MusicSound then pcall(function() MusicSound:Stop() end) end
 end})
 
--- 初始化当前ID显示
 UpdateCurrentIdLabel("1845918434")
