@@ -511,6 +511,105 @@ local Tab = Window:MakeTab({
         Icon = "rbxassetid://18270615016",
         PremiumOnly = false
 })
+Tab:AddToggle({
+    Name = "Auto Supa Tech (检测上勾拳)",
+    Default = false,
+    Callback = (function()
+        local connection = nil
+        local isExecuting = false -- 防抖标志位，防止连招重叠
+        local m1Count = 0         -- M1 计数器
+        local lastM1Time = 0      -- 最后一次按 M1 的时间
+        local UserInputService = game:GetService("UserInputService")
+
+        -- 按键模拟函数
+        local function pressKey(keyCode)
+            pcall(function()
+                keypress(keyCode)
+                task.wait(0.01)
+                keyrelease(keyCode)
+            end)
+        end
+
+        -- Supa Tech 连招执行函数
+        local function executeSupaTech()
+            if isExecuting then return end
+            isExecuting = true
+
+            -- 等待上勾拳动作打出去 (延迟根据你的网络延迟调整)
+            -- 上勾拳空格按下后，动作起手需要一点时间，如果接不上可以适当调大
+            task.wait(0.06) 
+
+            -- 1. 前冲 (W + Shift)
+            pressKey(Enum.KeyCode.W)
+            pressKey(Enum.KeyCode.LeftShift)
+            task.wait(0.05)
+
+            -- 2. 普攻 (M1)
+            pcall(function() mouse1click() end)
+            task.wait(0.1)
+
+            -- 3. 取消后摇并再次前冲
+            pressKey(Enum.KeyCode.W)
+            pressKey(Enum.KeyCode.LeftShift)
+            task.wait(0.05)
+
+            -- 4. 第二次普攻
+            pcall(function() mouse1click() end)
+            
+            -- 连招结束，稍微停顿一下
+            task.wait(0.2)
+            isExecuting = false
+        end
+
+        return function(Value)
+            -- 关闭开关，断开监听连接
+            if not Value then
+                if connection then
+                    connection:Disconnect()
+                    connection = nil
+                end
+                m1Count = 0 -- 重置计数器
+                return
+            end
+
+            -- 防止重复创建多个监听
+            if connection then return end
+
+            -- 监听玩家的按键和鼠标输入
+            connection = UserInputService.InputBegan:Connect(function(input, gameProcessed)
+                -- 如果玩家正在打字聊天，不触发
+                if gameProcessed then return end
+                
+                -- 1. 记录 M1 (鼠标左键) 输入
+                if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                    -- 如果距离上一次M1超过0.8秒，说明连招中断，重新计数
+                    if tick() - lastM1Time > 0.8 then
+                        m1Count = 0
+                    end
+                    m1Count = m1Count + 1
+                    lastM1Time = tick()
+                    -- print("当前M1次数: " .. m1Count) -- 调试用，可以取消注释看看计数对不对
+                    
+                    -- 限制计数器上限，防止无限累积
+                    if m1Count > 4 then
+                        m1Count = 0
+                    end
+                end
+
+                -- 2. 检测空格键（上勾拳触发）
+                if input.KeyCode == Enum.KeyCode.Space then
+                    -- 如果前面的 M1 次数达到了 4 次 (3m1 + 1m)，说明按下了上勾拳
+                    if m1Count >= 4 then
+                        -- 重置计数器，防止连招重叠
+                        m1Count = 0 
+                        -- 执行 Supa Tech
+                        executeSupaTech()
+                    end
+                end
+            end)
+        end
+    end)()
+})
 Tab:AddButton({
     Name = "1",
         Callback = function()
