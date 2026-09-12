@@ -1356,6 +1356,77 @@ Tab:AddToggle({
         end
     end)()
 })
+Tab:AddToggle({
+    Name = "无限体力 (Infinite Stamina)",
+    Default = false,
+    Callback = (function()
+        local loopThread = nil
+        local sprintingModule = nil
+        return function(Value)
+            local executor = identifyexecutor and identifyexecutor() or "Unknown"
+            local unsupported = {"Xeno", "Velocity", "LX63", "Solara"}
+            
+            -- 检查执行器兼容性
+            if table.find(unsupported, executor) then
+                Fluent:Notify({
+                    Title = "不支持",
+                    Content = "你的执行器 (" .. executor .. ") 不支持无限体力。",
+                    Duration = 6.5,
+                    Image = "lucide-leaf",
+                })
+                return
+            end
+
+            -- 关闭开关，强制终止循环线程并恢复默认状态
+            if not Value then
+                if loopThread then
+                    task.cancel(loopThread)
+                    loopThread = nil
+                end
+                -- 恢复默认体力损失设置
+                if sprintingModule then
+                    pcall(function()
+                        sprintingModule.StaminaLossDisabled = false
+                    end)
+                end
+                return
+            end
+
+            -- 防止重复创建多个并发循环
+            if loopThread then return end
+
+            -- 缓存远程模块，仅查找一次，避免每次循环都 require 导致性能损耗
+            if not sprintingModule then
+                local ReplicatedStorage = game:GetService("ReplicatedStorage")
+                local success, module = pcall(function()
+                    return require(ReplicatedStorage.Systems.Character.Game.Sprinting)
+                end)
+                if success then
+                    sprintingModule = module
+                else
+                    Fluent:Notify({
+                        Title = "错误",
+                        Content = "获取 Sprinting 模块失败，游戏可能已更新。",
+                        Duration = 6.5,
+                        Image = "lucide-alert-circle",
+                    })
+                    return
+                end
+            end
+
+            loopThread = task.spawn(function()
+                while true do
+                    if sprintingModule then
+                        pcall(function()
+                            sprintingModule.StaminaLossDisabled = true
+                        end)
+                    end
+                    task.wait(0.5) -- 保持原作者建议的 0.5s 间隔，避免占用过多性能
+                end
+            end)
+        end
+    end)()
+})
 local Tab = Window:MakeTab({
     Name = "fflags脚本",
         Icon = "rbxassetid://18270615016",
