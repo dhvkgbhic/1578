@@ -1096,6 +1096,266 @@ Tab:AddButton({
         loadstring(game:HttpGet("https://raw.githubusercontent.com/ChinaQY/Scripts/Main/Forsaken"))()
                 end
 })
+Tab:AddToggle({
+    Name = "杀手 Hitbox ESP",
+    Default = false,
+    Callback = (function()
+        local connections = {}
+        local espMap = {}
+        local renderConn = nil
+
+        local KILLERS = workspace:WaitForChild("Players"):WaitForChild("Killers")
+        local RunService = game:GetService("RunService")
+        local Players = game:GetService("Players")
+        local LocalPlayer = Players.LocalPlayer
+
+        local function clearESP()
+            for hitbox, data in pairs(espMap) do
+                if data.Highlight then data.Highlight:Destroy() end
+                if data.Billboard then data.Billboard:Destroy() end
+            end
+            espMap = {}
+
+            for _, conn in ipairs(connections) do
+                conn:Disconnect()
+            end
+            connections = {}
+
+            if renderConn then
+                renderConn:Disconnect()
+                renderConn = nil
+            end
+        end
+
+        local function addESP(hitbox, killer)
+            if not hitbox:IsA("BasePart") then return end
+            if espMap[hitbox] then return end
+
+            local highlight = Instance.new("Highlight")
+            highlight.Name = "HitboxESP"
+            highlight.Adornee = hitbox
+            highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+            highlight.FillColor = Color3.fromRGB(255, 0, 0)
+            highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
+            highlight.FillTransparency = 0.5
+            highlight.OutlineTransparency = 0
+            highlight.Parent = hitbox
+
+            local billboard = Instance.new("BillboardGui")
+            billboard.Name = "HitboxNameESP"
+            billboard.Adornee = hitbox
+            billboard.Size = UDim2.new(0, 200, 0, 50)
+            billboard.StudsOffset = Vector3.new(0, 2, 0)
+            billboard.AlwaysOnTop = true
+            billboard.Parent = hitbox
+
+            local label = Instance.new("TextLabel")
+            label.Name = "NameLabel"
+            label.Size = UDim2.new(1, 0, 1, 0)
+            label.BackgroundTransparency = 1
+            label.Text = killer.Name
+            label.TextColor3 = Color3.fromRGB(255, 255, 255)
+            label.TextStrokeTransparency = 0
+            label.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+            label.TextScaled = true
+            label.Font = Enum.Font.GothamBold
+            label.Parent = billboard
+
+            espMap[hitbox] = {
+                Highlight = highlight,
+                Billboard = billboard,
+                Label = label,
+                Killer = killer,
+            }
+
+            table.insert(connections, hitbox.AncestryChanged:Connect(function()
+                if not hitbox:IsDescendantOf(game) then
+                    local data = espMap[hitbox]
+                    if data then
+                        data.Highlight:Destroy()
+                        data.Billboard:Destroy()
+                        espMap[hitbox] = nil
+                    end
+                end
+            end))
+        end
+
+        local function setupKiller(killer)
+            local hitbox = killer:FindFirstChild("CollisionHitbox")
+            if hitbox then
+                addESP(hitbox, killer)
+            end
+
+            table.insert(connections, killer.ChildAdded:Connect(function(child)
+                if child.Name == "CollisionHitbox" then
+                    addESP(child, killer)
+                end
+            end))
+        end
+
+        return function(Value)
+            if not Value then
+                clearESP()
+                return
+            end
+
+            for _, killer in ipairs(KILLERS:GetChildren()) do
+                setupKiller(killer)
+            end
+
+            table.insert(connections, KILLERS.ChildAdded:Connect(setupKiller))
+
+            local updateAccum = 0
+            renderConn = RunService.RenderStepped:Connect(function(dt)
+                updateAccum = updateAccum + dt
+                if updateAccum < 0.1 then return end
+                updateAccum = 0
+
+                local character = LocalPlayer.Character
+                local root = character and character:FindFirstChild("HumanoidRootPart")
+                if not root then return end
+
+                for hitbox, data in pairs(espMap) do
+                    if hitbox.Parent and data.Killer.Parent then
+                        local distance = (root.Position - hitbox.Position).Magnitude
+                        data.Label.Text = string.format("%s [%dm]", data.Killer.Name, math.floor(distance + 0.5))
+                    end
+                end
+            end)
+        end
+    end)()
+})
+Tab:AddToggle({
+    Name = "幸存者 Hitbox ESP",
+    Default = false,
+    Callback = (function()
+        local connections = {}
+        local espMap = {}
+        local renderConn = nil
+
+        local SURVIVORS = workspace:WaitForChild("Players"):WaitForChild("Survivors")
+        local RunService = game:GetService("RunService")
+        local Players = game:GetService("Players")
+        local LocalPlayer = Players.LocalPlayer
+
+        local function clearESP()
+            for hitbox, data in pairs(espMap) do
+                if data.Highlight then data.Highlight:Destroy() end
+                if data.Billboard then data.Billboard:Destroy() end
+            end
+            espMap = {}
+
+            for _, conn in ipairs(connections) do
+                conn:Disconnect()
+            end
+            connections = {}
+
+            if renderConn then
+                renderConn:Disconnect()
+                renderConn = nil
+            end
+        end
+
+        local function addESP(hitbox, survivor)
+            if not hitbox:IsA("BasePart") then return end
+            if espMap[hitbox] then return end
+
+            local highlight = Instance.new("Highlight")
+            highlight.Name = "HitboxESP"
+            highlight.Adornee = hitbox
+            highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+            highlight.FillColor = Color3.fromRGB(255, 255, 255)
+            highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
+            highlight.FillTransparency = 0.5
+            highlight.OutlineTransparency = 0
+            highlight.Parent = hitbox
+
+            local billboard = Instance.new("BillboardGui")
+            billboard.Name = "HitboxNameESP"
+            billboard.Adornee = hitbox
+            billboard.Size = UDim2.new(0, 200, 0, 50)
+            billboard.StudsOffset = Vector3.new(0, 2, 0)
+            billboard.AlwaysOnTop = true
+            billboard.Parent = hitbox
+
+            local label = Instance.new("TextLabel")
+            label.Name = "NameLabel"
+            label.Size = UDim2.new(1, 0, 1, 0)
+            label.BackgroundTransparency = 1
+            label.Text = survivor.Name
+            label.TextColor3 = Color3.fromRGB(170, 170, 170) -- 灰色名字
+            label.TextStrokeTransparency = 0
+            label.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)  -- 黑色描边
+            label.TextScaled = true
+            label.Font = Enum.Font.GothamBold
+            label.Parent = billboard
+
+            espMap[hitbox] = {
+                Highlight = highlight,
+                Billboard = billboard,
+                Label = label,
+                Entity = survivor,
+            }
+
+            table.insert(connections, hitbox.AncestryChanged:Connect(function()
+                if not hitbox:IsDescendantOf(game) then
+                    local data = espMap[hitbox]
+                    if data then
+                        data.Highlight:Destroy()
+                        data.Billboard:Destroy()
+                        espMap[hitbox] = nil
+                    end
+                end
+            end))
+        end
+
+        local function setupEntity(entity)
+            if not entity:IsA("Model") and not entity:IsA("Folder") then return end
+
+            local hitbox = entity:FindFirstChild("CollisionHitbox")
+            if hitbox then
+                addESP(hitbox, entity)
+            end
+
+            table.insert(connections, entity.ChildAdded:Connect(function(child)
+                if child.Name == "CollisionHitbox" then
+                    addESP(child, entity)
+                end
+            end))
+        end
+
+        return function(Value)
+            if not Value then
+                clearESP()
+                return
+            end
+
+            for _, entity in ipairs(SURVIVORS:GetChildren()) do
+                setupEntity(entity)
+            end
+
+            table.insert(connections, SURVIVORS.ChildAdded:Connect(setupEntity))
+
+            local updateAccum = 0
+            renderConn = RunService.RenderStepped:Connect(function(dt)
+                updateAccum = updateAccum + dt
+                if updateAccum < 0.1 then return end
+                updateAccum = 0
+
+                local character = LocalPlayer.Character
+                local root = character and character:FindFirstChild("HumanoidRootPart")
+                if not root then return end
+
+                for hitbox, data in pairs(espMap) do
+                    if hitbox.Parent and data.Entity.Parent then
+                        local distance = (root.Position - hitbox.Position).Magnitude
+                        data.Label.Text = string.format("%s [%dm]", data.Entity.Name, math.floor(distance + 0.5))
+                    end
+                end
+            end)
+        end
+    end)()
+})
 local Tab = Window:MakeTab({
     Name = "fflags脚本",
         Icon = "rbxassetid://18270615016",
