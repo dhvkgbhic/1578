@@ -1,10 +1,9 @@
--- 星喵 MM2 多功能 (Raycast 子弹追踪 + 身份透视)
+-- 星喵 MM2 多功能 (最终安全版)
 -- 使用 UI 库: dhvkgbhic/1578/main/ui
--- 需要执行器支持: hookmetamethod / getnamecallmethod / checkcaller / newcclosure
 
-local Players    = game:GetService("Players")
-local RunService = game:GetService("RunService")
-local Stats      = game:GetService("Stats")
+local Players            = game:GetService("Players")
+local RunService         = game:GetService("RunService")
+local UserInputService   = game:GetService("UserInputService")
 
 local LocalPlayer = Players.LocalPlayer
 local Camera      = workspace.CurrentCamera
@@ -15,7 +14,7 @@ local Window = OrionLib:MakeWindow({
     Name = "星喵 MM2 多功能",
     HidePremium = false,
     SaveConfig = true,
-    IntroText = "星喵 MM2 多功能 v2.0",
+    IntroText = "星喵 MM2 多功能 v2.2",
     ConfigFolder = "StarMeowMM2"
 })
 
@@ -32,12 +31,22 @@ local Settings = {
     ESPSheriff       = true,
     ESPShowName      = true,
     ESPTransparency  = 0.3,
-
-    -- 防队友开关
-    IgnoreLocalTeam  = true,
 }
 
--- ==================== 身份识别 ====================
+-- 鼠标左键状态
+local mouseDown = false
+UserInputService.InputBegan:Connect(function(input, gp)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        mouseDown = true
+    end
+end)
+UserInputService.InputEnded:Connect(function(input, gp)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        mouseDown = false
+    end
+end)
+
+-- 身份识别
 local function hasTool(plr, toolNames)
     local char = plr.Character
     local backpack = plr:FindFirstChild("Backpack")
@@ -70,12 +79,37 @@ local ROLE_NAMES = {
     Sheriff  = "警长",
 }
 
--- ==================== 子弹追踪：目标选择 ====================
--- 找屏幕中心最近的目标头
+-- 检查自己是否装备了枪
+local function hasGunEquipped()
+    local char = LocalPlayer.Character
+    if not char then return false end
+    for _, tool in ipairs(char:GetChildren()) do
+        if tool:IsA("Tool") then
+            local n = tool.Name:lower()
+            if n == "gun" or n == "revolver" or n == "sheriffgun" then
+                return true
+            end
+        end
+    end
+    return false
+end
+
+-- 目标缓存
+local cachedTarget = nil
+local lastCacheTime = 0
+
 local function getClosestHead()
+    local now = tick()
+    if now - lastCacheTime < 0.1 then
+        return cachedTarget
+    end
+    lastCacheTime = now
+
     local myChar = LocalPlayer.Character
-    if not myChar or not myChar:FindFirstChild("HumanoidRootPart") then return nil end
-    local myRoot = myChar.HumanoidRootPart
+    if not myChar or not myChar:FindFirstChild("HumanoidRootPart") then
+        cachedTarget = nil
+        return nil
+    end
 
     local viewportSize = Camera.ViewportSize
     local screenCenter = Vector2.new(viewportSize.X / 2, viewportSize.Y / 2)
@@ -91,7 +125,6 @@ local function getClosestHead()
         if not hum or hum.Health <= 0 then continue end
 
         local role = getRole(plr)
-        -- 目标筛选
         if role == "Murderer" and not Settings.TargetMurderer then continue end
         if role == "Sheriff"  and not Settings.TargetSheriff  then continue end
         if role == "Innocent" then continue end
@@ -99,7 +132,6 @@ local function getClosestHead()
         local head = char:FindFirstChild("Head")
         if not head then continue end
 
-        -- 屏幕距离筛选
         local screenPos, onScreen = Camera:WorldToViewportPoint(head.Position)
         if not onScreen then continue end
 
@@ -110,31 +142,33 @@ local function getClosestHead()
         end
     end
 
+    cachedTarget = closestHead
     return closestHead
 end
 
--- ==================== Raycast Hook (子弹追踪核心) ====================
--- MM2 的枪在客户端做 Raycast，然后把结果发给服务器
--- 我们 Hook Raycast，返回一个"命中目标"的假结果
+-- Raycast Hook (只在按鼠标+持枪时生效)
 local oldNamecall
 oldNamecall = hookmetamethod(game, "__namecall", newcclosure(function(self, ...)
     local method = getnamecallmethod()
-    local args = { ... }
 
-    -- 只处理 Raycast 调用，不处理我们自己触发的
-    if method == "Raycast" and not checkcaller() then
-        if Settings.AimEnabled then
-            local origin = args[1] or Camera.CFrame.Position
-            local closestHead = getClosestHead()
+    if method == "Raycast"
+       and not checkcaller()
+       and Settings.AimEnabled
+       and mouseDown
+       and hasGunEquipped() then
 
-            if closestHead then
-                -- 返回一个假的 raycast 结果，告诉游戏"命中了目标头部"
+        local args = { ... }
+        local origin = args[1]
+
+        if typeof(origin) == "Vector3" then
+            local target = getClosestHead()
+            if target then
                 return {
-                    Instance = closestHead,
-                    Position = closestHead.Position,
-                    Normal = (origin - closestHead.Position).Unit,
+                    Instance = target,
+                    Position = target.Position,
+                    Normal = (origin - target.Position).Unit,
                     Material = Enum.Material.Plastic,
-                    Distance = (closestHead.Position - origin).Magnitude,
+                    Distance = (target.Position - origin).Magnitude,
                 }
             end
         end
@@ -143,7 +177,7 @@ oldNamecall = hookmetamethod(game, "__namecall", newcclosure(function(self, ...)
     return oldNamecall(self, ...)
 end))
 
--- ==================== ESP 系统 ====================
+-- ESP
 local espFolder = Instance.new("Folder")
 espFolder.Name = "StarMeowMM2ESP"
 espFolder.Parent = workspace
@@ -177,7 +211,6 @@ local function createESP(plr)
     local color = ROLE_COLORS[role] or ROLE_COLORS.Innocent
     local roleName = ROLE_NAMES[role] or "平民"
 
-    -- Highlight 描边
     local highlight = Instance.new("Highlight")
     highlight.Name = "StarMeowESP"
     highlight.Adornee = char
@@ -192,7 +225,6 @@ local function createESP(plr)
     highlight.OutlineTransparency = 0
     highlight.Parent = espFolder
 
-    -- 头顶名字
     local billboard
     if Settings.ESPShowName then
         local head = char:FindFirstChild("Head")
@@ -245,16 +277,10 @@ local function updateESP()
     for _, plr in ipairs(Players:GetPlayers()) do
         if plr == LocalPlayer then continue end
         local char = plr.Character
-        if not char then
-            clearESP(plr)
-            continue
-        end
+        if not char then clearESP(plr); continue end
 
         local hum = char:FindFirstChildOfClass("Humanoid")
-        if not hum or hum.Health <= 0 then
-            clearESP(plr)
-            continue
-        end
+        if not hum or hum.Health <= 0 then clearESP(plr); continue end
 
         local role = getRole(plr)
         local shouldShow = false
@@ -262,10 +288,7 @@ local function updateESP()
         if role == "Murderer" and Settings.ESPMurderer then shouldShow = true end
         if role == "Sheriff"  and Settings.ESPSheriff  then shouldShow = true end
 
-        if not shouldShow then
-            clearESP(plr)
-            continue
-        end
+        if not shouldShow then clearESP(plr); continue end
 
         if not activeESP[plr] or (activeESP[plr].highlight and activeESP[plr].highlight.Adornee ~= char) then
             createESP(plr)
@@ -298,9 +321,7 @@ local function updateESP()
     end
 
     for plr, _ in pairs(activeESP) do
-        if not plr.Parent or not plr.Character then
-            clearESP(plr)
-        end
+        if not plr.Parent or not plr.Character then clearESP(plr) end
     end
 end
 
@@ -311,9 +332,7 @@ Players.PlayerAdded:Connect(function(plr)
     end)
 end)
 
-Players.PlayerRemoving:Connect(function(plr)
-    clearESP(plr)
-end)
+Players.PlayerRemoving:Connect(function(plr) clearESP(plr) end)
 
 if LocalPlayer.Character then
     LocalPlayer.CharacterAdded:Connect(function()
@@ -323,11 +342,9 @@ if LocalPlayer.Character then
     end)
 end
 
-RunService.RenderStepped:Connect(function()
-    updateESP()
-end)
+RunService.RenderStepped:Connect(updateESP)
 
--- ==================== FOV 圆环 ====================
+-- FOV 圆环
 local fovGui = Instance.new("ScreenGui")
 fovGui.Name = "StarMeowMM2FOV"
 fovGui.ResetOnSpawn = false
@@ -362,15 +379,16 @@ RunService.RenderStepped:Connect(function()
     end
 end)
 
--- ==================== UI ====================
+-- UI
 local AimTab = Window:MakeTab({
     Name = "子弹追踪",
     Icon = "rbxassetid://18270615016",
     PremiumOnly = false
 })
 
-AimTab:AddParagraph("MM2 专用子弹追踪")
-AimTab:AddParagraph("Hook Raycast, 让游戏射线直接命中目标头部")
+AimTab:AddParagraph("MM2 子弹追踪")
+AimTab:AddParagraph("按住鼠标左键 + 持枪时才生效")
+AimTab:AddParagraph("松开鼠标或收枪自动停止")
 
 AimTab:AddToggle({
     Name = "启用子弹追踪",
@@ -531,25 +549,22 @@ local InfoTab = Window:MakeTab({
     PremiumOnly = false
 })
 
-InfoTab:AddParagraph("子弹追踪原理")
-InfoTab:AddParagraph("MM2 的枪在客户端做 Raycast")
-InfoTab:AddParagraph("本脚本 Hook Raycast, 让射线直接命中目标头部")
-InfoTab:AddParagraph("这是 MM2 静默瞄准的正确做法")
+InfoTab:AddParagraph("安全机制")
+InfoTab:AddParagraph("1. 只在鼠标按下时 Hook")
+InfoTab:AddParagraph("2. 只在你持有枪时 Hook")
+InfoTab:AddParagraph("3. 目标缓存 0.1 秒")
+InfoTab:AddParagraph("4. 不持枪时完全不干扰游戏")
 InfoTab:AddDivider()
-InfoTab:AddParagraph("身份透视")
-InfoTab:AddParagraph("平民: 灰色描边")
-InfoTab:AddParagraph("杀手: 红色描边")
-InfoTab:AddParagraph("警长: 蓝色描边(50%透明)")
+InfoTab:AddParagraph("使用步骤")
+InfoTab:AddParagraph("1. 先打开身份透视, 确认能看到红蓝描边")
+InfoTab:AddParagraph("2. 拿到枪后打开子弹追踪")
+InfoTab:AddParagraph("3. 按住鼠标左键瞄准杀手方向")
+InfoTab:AddParagraph("4. 圆环红=已锁定, 绿=无目标")
 InfoTab:AddDivider()
-InfoTab:AddParagraph("识别机制")
-InfoTab:AddParagraph("杀手: 持有 Knife 工具")
+InfoTab:AddParagraph("身份识别")
+InfoTab:AddParagraph("杀手: 持有 Knife")
 InfoTab:AddParagraph("警长: 持有 Gun/Revolver")
 InfoTab:AddParagraph("平民: 无武器")
-InfoTab:AddDivider()
-InfoTab:AddParagraph("使用注意")
-InfoTab:AddParagraph("仅追踪杀手/警长, 不会误伤平民")
-InfoTab:AddParagraph("需要执行器支持 hookmetamethod")
-InfoTab:AddParagraph("MM2 有反作弊, 谨慎使用")
 
 OrionLib:MakeNotification({
     Name = "星喵",
